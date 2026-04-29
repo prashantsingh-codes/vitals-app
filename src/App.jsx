@@ -1241,7 +1241,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   //   );
   // }
 
-  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel {...healthPanelProps} />, ai: <AIPanel /> };
+  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel {...healthPanelProps} /> /*, ai: <AIPanel />*/ };
 
   if (loadingData) {
     return (
