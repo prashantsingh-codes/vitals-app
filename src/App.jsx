@@ -292,6 +292,100 @@ function CustomFoodChip({ food, onToggle, onDelete }) {
   );
 }
 
+// const GREETING = { role: "assistant", text: "Hi! I'm your AI health coach. Ask me anything about nutrition, macros, or your goals." };
+
+//AI Chatbot
+// function AIChatbot() {
+//   const [msgs, setMsgs] = useState([GREETING]);
+//   const [input, setInput] = useState("");
+//   const [loading, setLoading] = useState(false);
+//   const endRef = useRef(null);
+
+//   useEffect(() => {
+//     endRef.current?.scrollIntoView({ behavior: "smooth" });
+//   }, [msgs]);
+
+//   async function send() {
+//     const q = input.trim();
+//     if (!q) return;
+
+//     const userMsg = { role: "user", text: q };
+//     const newMsgs = [...msgs, userMsg];
+//     setMsgs(newMsgs);
+//     setInput("");
+//     setLoading(true);
+
+//     try {
+//       const token = localStorage.getItem("vt_token");
+
+//       // ✅ Skip the greeting, only send real conversation to Gemini
+//       const apiMessages = newMsgs
+//         .filter(m => m !== GREETING)
+//         .map(m => ({ role: m.role, content: m.text }));
+
+//       const res = await fetch("/api/chat", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({ messages: apiMessages }),
+//       });
+
+//       const data = await res.json();
+//       console.log("SERVER RESPONSE:", JSON.stringify(data));
+//       const reply = data.reply || "Sorry, I couldn't respond right now.";
+//       setMsgs(m => [...m, { role: "assistant", text: reply }]);
+//     } catch {
+//       setMsgs(m => [...m, { role: "assistant", text: "Network error — please try again." }]);
+//     }
+//     setLoading(false);
+//   }
+
+//   return (
+//     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 340 }}>
+//       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingBottom: 8, maxHeight: 340 }}>
+//         {msgs.map((m, i) => (
+//           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+//             <div style={{
+//               maxWidth: "82%", padding: "10px 14px",
+//               borderRadius: m.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+//               background: m.role === "user" ? "var(--accent)" : "var(--surface2)",
+//               color: m.role === "user" ? "#fff" : "var(--text)", fontSize: 13, lineHeight: 1.55,
+//               border: m.role === "user" ? "none" : "1px solid var(--border)"
+//             }}>{m.text}</div>
+//           </div>
+//         ))}
+//         {loading && (
+//           <div style={{ display: "flex", justifyContent: "flex-start" }}>
+//             <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "var(--surface2)", border: "1px solid var(--border)", color: "var(--text3)", fontSize: 13 }}>
+//               <span style={{ animation: "pulse 1s infinite" }}>●</span> thinking…
+//             </div>
+//           </div>
+//         )}
+//         <div ref={endRef} />
+//       </div>
+
+//       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+//         <input
+//           value={input} onChange={e => setInput(e.target.value)}
+//           onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+//           placeholder="Ask about nutrition, goals…"
+//           style={{
+//             flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10,
+//             padding: "10px 14px", fontSize: 13, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none"
+//           }}
+//         />
+//         <button onClick={send} disabled={loading || !input.trim()} style={{
+//           background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10,
+//           padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+//           opacity: loading || !input.trim() ? 0.5 : 1
+//         }}>Send</button>
+//       </div>
+//     </div>
+//   );
+// }
+
 // Weight chart (canvas)
 function WeightChart({ history, dark }) {
   const canvasRef = useRef(null);
@@ -861,6 +955,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     { id: "tracker", icon: "🥗", label: "Tracker" },
     { id: "weight",  icon: "⚖️", label: "Weight" },
     { id: "health",  icon: "❤️", label: "Health" },
+    // { id: "ai",      icon: "🤖", label: "AI Coach" },
   ];
 
   // Sidebar nav (desktop)
@@ -1138,7 +1233,15 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps };
   
 
-  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel {...healthPanelProps} /> };
+  // function AIPanel() {
+  //   return (
+  //     <Card title="AI Health Coach" icon="🤖">
+  //       <AIChatbot />
+  //     </Card>
+  //   );
+  // }
+
+  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel {...healthPanelProps} />, ai: <AIPanel /> };
 
   if (loadingData) {
     return (
