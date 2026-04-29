@@ -298,10 +298,12 @@ app.post("/api/chat", auth, async (req, res) => {
   }
 });
 // ─── Start ────────────────────────────────────────────────────────────────────
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`\n🌿 Vitals server → http://localhost:${PORT}`);
-    console.log(`   MongoDB : ${process.env.MONGODB_URI ? "✅ URI loaded" : "❌ Not set — add to server/.env"}`);
-    console.log(`   AI key  : ${process.env.GEMINI_API_KEY ? "✅ Loaded" : "❌ Not set"}\n`);
-  });
-});
+// connectDB().then(() => {
+//   app.listen(PORT, () => {
+//     console.log(`\n🌿 Vitals server → http://localhost:${PORT}`);
+//     console.log(`   MongoDB : ${process.env.MONGODB_URI ? "✅ URI loaded" : "❌ Not set — add to server/.env"}`);
+//     console.log(`   AI key  : ${process.env.GEMINI_API_KEY ? "✅ Loaded" : "❌ Not set"}\n`);
+//   });
+// });
+connectDB();
+export default app;
