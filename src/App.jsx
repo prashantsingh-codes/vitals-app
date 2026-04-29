@@ -733,12 +733,12 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
         <Card title="Hydration Tracker" icon="💧">
           <div style={{ textAlign: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue, #2563EB)" }}>{water}</div>
-            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today (goal: 8)</div>
-            <ProgBar val={water} max={8} color="#2563EB" />
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today (goal: 15)</div>
+            <ProgBar val={water} max={15} color="#2563EB" />
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button onClick={() => handleWater(Math.max(0, water - 1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
-            <button onClick={() => handleWater(Math.min(15, water + 1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
+            <button onClick={() => handleWater(Math.min(25, water + 1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
           </div>
         </Card>
       </div>
@@ -1282,7 +1282,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
                 {navTabs.find(t => t.id === activeTab)?.icon} {navTabs.find(t => t.id === activeTab)?.label}
               </div>
-              <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome back, {user.name}</div>
+              <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
             </div>
             {syncing && <span style={{ fontSize: 12, color: "var(--text3)", animation: "pulse 1s infinite" }}>☁️ Saving…</span>}
           </div>
