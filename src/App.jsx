@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { api } from "./api.js";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const LIGHT = {
@@ -23,18 +24,17 @@ const DARK = {
 };
 
 // ─── Macros data ──────────────────────────────────────────────────────────────
-const TARGETS = { cal: 1800, pro: 130, fat: 55 };
 const MACROS = {
   milk:     { cal: 85,  pro: 6,  fat: 3,   label: "Milk" },
-  oats:     { cal: 115, pro: 4,  fat: 2,   label: "Oats" },
-  whey:     { cal: 120, pro: 24, fat: 1,   label: "Whey" },
-  rice:     { cal: 200, pro: 4,  fat: 0.5, label: "Rice" },
-  paneer50: { cal: 90,  pro: 10, fat: 4,   label: "Paneer 50g" },
-  paneer100:{ cal: 180, pro: 20, fat: 8,   label: "Paneer 100g" },
-  dal:      { cal: 180, pro: 10, fat: 3,   label: "Dal" },
-  soya:     { cal: 300, pro: 25, fat: 14,  label: "Soya Chunks" },
-  wholeEgg: { cal: 70,  pro: 6,  fat: 5,   label: "Whole Egg" },
-  eggWhite: { cal: 17,  pro: 3.6,fat: 0,   label: "Egg White" },
+  oats:     { cal: 111, pro: 3.75,  fat: 2.4,   label: "Oats" },
+  whey:     { cal: 140, pro: 25, fat: 1.8,   label: "Whey" },
+  rice:     { cal: 250, pro: 4,  fat: 0.5, label: "Rice" },
+  paneer50: { cal: 102,  pro: 12.5, fat: 4.5,   label: "Paneer 50g" },
+  paneer100:{ cal: 203.8, pro: 25, fat: 9,   label: "Paneer 100g" },
+  dal:      { cal: 320, pro: 19, fat: 3,   label: "Dal" },
+  soya:     { cal: 175, pro: 25, fat: 1,  label: "Soya Chunks" },
+  wholeEgg: { cal: 67,  pro: 6,  fat: 5,   label: "Whole Egg" },
+  eggWhite: { cal: 17,  pro: 3.6, fat: 0,   label: "Egg White" },
 };
 const FOODS = [
   { id: "milk1",    key: "milk",      section: "Milk" },
@@ -53,15 +53,27 @@ const FOOD_LABEL = (f) =>
   f.id === "milk1" ? "Milk 1" : f.id === "milk2" ? "Milk 2" : f.id === "milk3" ? "Milk 3" :
   f.id === "dal1" ? "Dal (bowl 1)" : f.id === "dal2" ? "Dal (bowl 2)" : MACROS[f.key].label;
 
-// Veg/egg alternative suggestions
-const ALT_SUGGESTIONS = [
-  { name: "Tofu scramble", cal: 120, pro: 12, fat: 6,  tag: "🥚 veg" },
-  { name: "Moong dal chilla", cal: 140, pro: 10, fat: 3, tag: "🫘 veg" },
-  { name: "Paneer bhurji", cal: 160, pro: 14, fat: 9, tag: "🧀 veg" },
-  { name: "Boiled chickpeas", cal: 180, pro: 9,  fat: 3, tag: "🫘 veg" },
-  { name: "Greek yogurt bowl", cal: 100, pro: 10, fat: 3, tag: "🥛 veg" },
-  { name: "Egg white omelette", cal: 60,  pro: 12, fat: 1, tag: "🥚 egg" },
+// ─── Motivational quotes ──────────────────────────────────────────────────────
+const MOTIVATIONAL_QUOTES = [
+  "The body achieves what the mind believes. 💪",
+  "Discipline is choosing between what you want now and what you want most.",
+  "Small steps every day add up to big results. 🏆",
+  "You don't have to be extreme, just consistent.",
+  "Your only competition is who you were yesterday.",
+  "Eat well, move daily, hydrate often, sleep lots. 🌿",
+  "Success is the sum of small efforts repeated daily.",
+  "One day or day one — you decide. ⚡",
+  "Strive for progress, not perfection.",
+  "The pain you feel today will be the strength you feel tomorrow.",
+  "Make yourself proud. Every single day.",
+  "Momentum is built one rep, one meal, one choice at a time.",
+  "Believe in the process — results follow consistency. 🔥",
+  "Fuel your ambition, nourish your body.",
+  "You are stronger than your excuses. 💥",
 ];
+
+// Default onboarding targets (used before onboarding completes)
+const DEFAULT_TARGETS = { cal: 1800, pro: 130, fat: 55 };
 
 // ─── Health tips ──────────────────────────────────────────────────────────────
 const HEALTH_TIPS = [
@@ -79,12 +91,13 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-function calcMacros(items, wholeEggs, eggWhites) {
+function calcMacros(items, wholeEggs, eggWhites, customFoods = [], presetFoodList = FOODS) {
   let cal = 0, pro = 0, fat = 0;
-  FOODS.forEach(f => { if (items[f.id]) { cal += MACROS[f.key].cal; pro += MACROS[f.key].pro; fat += MACROS[f.key].fat; } });
+  presetFoodList.forEach(f => { if (items[f.id]) { cal += MACROS[f.key].cal; pro += MACROS[f.key].pro; fat += MACROS[f.key].fat; } });
   cal += wholeEggs * MACROS.wholeEgg.cal + eggWhites * MACROS.eggWhite.cal;
   pro += wholeEggs * MACROS.wholeEgg.pro + eggWhites * MACROS.eggWhite.pro;
   fat += wholeEggs * MACROS.wholeEgg.fat;
+  customFoods.forEach(f => { if (f.checked) { cal += Number(f.cal)||0; pro += Number(f.pro)||0; fat += Number(f.fat)||0; } });
   return { cal: Math.round(cal), pro: Math.round(pro * 10) / 10, fat: Math.round(fat * 10) / 10 };
 }
 
@@ -173,32 +186,155 @@ function FoodChip({ food, checked, onToggle }) {
   );
 }
 
-// AI Chatbot
-function AIChatbot({ t }) {
-  const [msgs, setMsgs] = useState([{ role: "assistant", text: "Hi! I'm your Vitals AI coach 🌿 Ask me anything about nutrition, fitness, or your health goals!" }]);
+// Add Food Modal
+function AddFoodModal({ onAdd, onClose }) {
+  const [name, setName] = useState("");
+  const [cal, setCal] = useState("");
+  const [pro, setPro] = useState("");
+  const [fat, setFat] = useState("");
+  const [error, setError] = useState("");
+
+  function submit() {
+    if (!name.trim()) { setError("Please enter a food name"); return; }
+    if (!cal || isNaN(cal) || Number(cal) < 0) { setError("Enter valid calories"); return; }
+    setError("");
+    onAdd({ name: name.trim(), cal: Number(cal), pro: Number(pro) || 0, fat: Number(fat) || 0 });
+    onClose();
+  }
+
+  const inp = {
+    background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10,
+    padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif",
+    outline: "none", width: "100%", boxSizing: "border-box",
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 1000,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20,
+        padding: 28, width: "100%", maxWidth: 400,
+        boxShadow: "0 20px 60px rgba(0,0,0,.25)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>➕ Add Custom Food</div>
+          <button onClick={onClose} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Food Name *</div>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Sprouts salad, Protein bar…" style={inp} autoFocus />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Calories *</div>
+              <input value={cal} onChange={e => setCal(e.target.value)} placeholder="kcal" type="number" min="0" style={{ ...inp }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Protein (g)</div>
+              <input value={pro} onChange={e => setPro(e.target.value)} placeholder="g" type="number" min="0" step="0.1" style={{ ...inp }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Fat (g)</div>
+              <input value={fat} onChange={e => setFat(e.target.value)} placeholder="g" type="number" min="0" step="0.1" style={{ ...inp }} />
+            </div>
+          </div>
+
+          {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500, background: "var(--accentBg)", padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+            <button onClick={onClose} style={{
+              flex: 1, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10,
+              padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--text2)", fontFamily: "inherit"
+            }}>Cancel</button>
+            <button onClick={submit} style={{
+              flex: 2, background: "var(--accent)", border: "none", borderRadius: 10,
+              padding: "11px 0", fontSize: 14, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "inherit"
+            }}>Add Food</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Custom food chip
+function CustomFoodChip({ food, onToggle, onDelete }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      background: food.checked ? "var(--accentBg)" : "var(--surface2)",
+      border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`,
+      borderRadius: 10, padding: "10px 12px", transition: "all .2s"
+    }}>
+      <div onClick={onToggle} style={{
+        width: 16, height: 16, borderRadius: 5, flexShrink: 0, cursor: "pointer",
+        border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
+        background: food.checked ? "var(--accent)" : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center"
+      }}>
+        {food.checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
+      </div>
+      <div onClick={onToggle} style={{ flex: 1, cursor: "pointer" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: food.checked ? "var(--accent)" : "var(--text)" }}>{food.name}</div>
+        <div style={{ fontSize: 11, color: "var(--text3)" }}>{food.cal}kcal · {food.pro}g P · {food.fat}g F</div>
+      </div>
+      <button onClick={onDelete} style={{
+        background: "none", border: "none", cursor: "pointer", color: "var(--text3)",
+        fontSize: 16, padding: "2px 4px", lineHeight: 1, borderRadius: 6,
+        transition: "color .15s"
+      }} title="Remove">🗑</button>
+    </div>
+  );
+}
+
+const GREETING = { role: "assistant", text: "Hi! I'm your AI health coach. Ask me anything about nutrition, macros, or your goals." };
+
+//AI Chatbot
+function AIChatbot() {
+  const [msgs, setMsgs] = useState([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
 
   async function send() {
     const q = input.trim();
     if (!q) return;
-    const newMsgs = [...msgs, { role: "user", text: q }];
+
+    const userMsg = { role: "user", text: q };
+    const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput("");
     setLoading(true);
+
     try {
+      const token = localStorage.getItem("vt_token");
+
+      // ✅ Skip the greeting, only send real conversation to Gemini
+      const apiMessages = newMsgs
+        .filter(m => m !== GREETING)
+        .map(m => ({ role: m.role, content: m.text }));
+
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
-        })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messages: apiMessages }),
       });
+
       const data = await res.json();
-      const reply = data.content?.find(c => c.type === "text")?.text || "Sorry, I couldn't respond right now.";
+      console.log("SERVER RESPONSE:", JSON.stringify(data));
+      const reply = data.reply || "Sorry, I couldn't respond right now.";
       setMsgs(m => [...m, { role: "assistant", text: reply }]);
     } catch {
       setMsgs(m => [...m, { role: "assistant", text: "Network error — please try again." }]);
@@ -212,7 +348,8 @@ function AIChatbot({ t }) {
         {msgs.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
             <div style={{
-              maxWidth: "82%", padding: "10px 14px", borderRadius: m.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+              maxWidth: "82%", padding: "10px 14px",
+              borderRadius: m.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
               background: m.role === "user" ? "var(--accent)" : "var(--surface2)",
               color: m.role === "user" ? "#fff" : "var(--text)", fontSize: 13, lineHeight: 1.55,
               border: m.role === "user" ? "none" : "1px solid var(--border)"
@@ -228,6 +365,7 @@ function AIChatbot({ t }) {
         )}
         <div ref={endRef} />
       </div>
+
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <input
           value={input} onChange={e => setInput(e.target.value)}
@@ -289,26 +427,29 @@ function WeightChart({ history, dark }) {
 }
 
 // Auth page (login + signup)
-function AuthPage({ onAuth, t }) {
+function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function submit() {
+  async function submit() {
     if (!email || !password) { setError("Please fill all fields"); return; }
     if (mode === "signup" && !name) { setError("Please enter your name"); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
-    const users = store.get("vt_users", {});
-    if (mode === "signup") {
-      if (users[email]) { setError("Account already exists"); return; }
-      users[email] = { name, password };
-      store.set("vt_users", users);
-      onAuth({ email, name });
-    } else {
-      if (!users[email] || users[email].password !== password) { setError("Invalid email or password"); return; }
-      onAuth({ email, name: users[email].name });
+    setError(""); setLoading(true);
+    try {
+      const data = mode === "signup"
+        ? await api.signup(name, email, password)
+        : await api.login(email, password);
+      localStorage.setItem("vt_token", data.token);
+      onAuth(data.user);
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -346,51 +487,439 @@ function AuthPage({ onAuth, t }) {
             <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" style={inp}
               onKeyDown={e => e.key === "Enter" && submit()} />
             {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>{error}</div>}
-            <button onClick={submit} style={{
+            <button onClick={submit} disabled={loading} style={{
               background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10,
-              padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-              transition: "all .2s", marginTop: 4
-            }}>{mode === "login" ? "Log In" : "Create Account"}</button>
+              padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
+              transition: "all .2s", marginTop: 4, opacity: loading ? 0.7 : 1
+            }}>{loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}</button>
           </div>
         </div>
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "var(--text3)" }}>
-          Credentials stored locally on this device
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Mifflin-St Jeor Calculator ───────────────────────────────────────────────
+function calcMifflin({ weight, height, age, gender, activity, goal }) {
+  const w = parseFloat(weight), h = parseFloat(height), a = parseFloat(age), act = parseFloat(activity);
+  const bmr = gender === "male"
+    ? 10 * w + 6.25 * h - 5 * a + 5
+    : 10 * w + 6.25 * h - 5 * a - 161;
+  const tdee = Math.round(bmr * act);
+  let cal, pro, fat;
+  if (goal === "lose") {
+    cal = tdee - 400;
+    pro = Math.round(w * 2.0);
+    fat = Math.round((cal * 0.25) / 9);
+  } else {
+    cal = tdee + 300;
+    pro = Math.round(w * 1.8);
+    fat = Math.round((cal * 0.28) / 9);
+  }
+  return { bmr: Math.round(bmr), tdee, cal: Math.max(cal, 1200), pro, fat };
+}
+
+// ─── Onboarding component ─────────────────────────────────────────────────────
+function OnboardingPage({ onComplete, dark, setDark }) {
+  const [step, setStep] = useState(0);
+  const [goal, setGoal] = useState("");
+  const [form, setForm] = useState({ age: "", gender: "male", weight: "", height: "", activity: "1.55", training: "balanced", targetWeight: "" });
+  const [calculated, setCalculated] = useState(null);
+  const [manualTargets, setManualTargets] = useState({ cal: 0, pro: 0, fat: 0 });
+  const [error, setError] = useState("");
+
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const inp = { background: "var(--surface2)", border: "1px solid var(--border2)", borderRadius: 10, padding: "11px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none", width: "100%", boxSizing: "border-box" };
+  const sel = { ...inp, cursor: "pointer" };
+
+  function nextStep() {
+    setError("");
+    if (step === 0 && !goal) { setError("Please select a goal"); return; }
+    if (step === 1) {
+      if (!form.age || !form.weight || !form.height) { setError("Please fill all fields"); return; }
+    }
+    if (step === 2) {
+      const res = calcMifflin({ ...form, goal });
+      setCalculated(res);
+      setManualTargets({ cal: res.cal, pro: res.pro, fat: res.fat });
+      setStep(3);
+      return;
+    }
+    if (step < 2) setStep(s => s + 1);
+  }
+
+  function confirm() {
+    onComplete({ goal, profile: form, targets: { cal: Number(manualTargets.cal), pro: Number(manualTargets.pro), fat: Number(manualTargets.fat) } });
+  }
+
+  const cardStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 420, boxShadow: "0 8px 32px rgba(26,24,20,.12)" };
+  const nextBtn = { width: "100%", background: "var(--accent)", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "'DM Sans',sans-serif", marginTop: 18, transition: "all .2s" };
+  const backBtn = { background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", marginTop: 10, width: "100%", textAlign: "center" };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, color: "var(--text)" }}>Vitals</div>
+        <div style={{ fontSize: 12, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 4 }}>Your nutrition companion</div>
+      </div>
+
+      {/* Step dots */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        {[0,1,2,3].map(i => (
+          <div key={i} style={{ height: 6, borderRadius: 99, background: step === i ? "var(--accent)" : "var(--border2)", width: step === i ? 22 : 6, transition: "all .3s" }} />
+        ))}
+      </div>
+
+      <div style={cardStyle}>
+        {/* ── Step 0: Goal ── */}
+        {step === 0 && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>What's your goal?</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 22, lineHeight: 1.6 }}>We'll use this to calculate your ideal calorie and macro targets.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {[
+                { id: "lose", icon: "🔥", label: "Lose Fat", sub: "Caloric deficit" },
+                { id: "gain", icon: "💪", label: "Gain Muscle", sub: "Caloric surplus" },
+              ].map(g => (
+                <div key={g.id} onClick={() => setGoal(g.id)} style={{
+                  border: `1.5px solid ${goal === g.id ? "var(--accent)" : "var(--border2)"}`,
+                  background: goal === g.id ? "var(--accentBg)" : "var(--surface2)",
+                  borderRadius: 12, padding: "18px 14px", cursor: "pointer", textAlign: "center", transition: "all .2s"
+                }}>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>{g.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: goal === g.id ? "var(--accent)" : "var(--text)" }}>{g.label}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{g.sub}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── Step 1: Basic info ── */}
+        {step === 1 && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>About you</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20, lineHeight: 1.6 }}>Used to estimate your base metabolic rate (BMR) via Mifflin-St Jeor.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { label: "Age", key: "age", placeholder: "25", type: "number" },
+                { label: "Weight (kg)", key: "weight", placeholder: "75", type: "number" },
+                { label: "Height (cm)", key: "height", placeholder: "175", type: "number" },
+              ].map(f => (
+                <div key={f.key}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>{f.label}</div>
+                  <input type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => setF(f.key, e.target.value)} style={inp} />
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Gender</div>
+                <select value={form.gender} onChange={e => setF("gender", e.target.value)} style={sel}>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Step 2: Activity ── */}
+        {step === 2 && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your activity level</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20, lineHeight: 1.6 }}>Helps us calculate your TDEE (Total Daily Energy Expenditure).</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Exercise days per week</div>
+                <select value={form.activity} onChange={e => setF("activity", e.target.value)} style={sel}>
+                  <option value="1.2">Sedentary (0 days / desk job)</option>
+                  <option value="1.375">Lightly active (1–2 days)</option>
+                  <option value="1.55">Moderately active (3–4 days)</option>
+                  <option value="1.725">Very active (5–6 days)</option>
+                  <option value="1.9">Athlete (daily intense training)</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Primary training type</div>
+                <select value={form.training} onChange={e => setF("training", e.target.value)} style={sel}>
+                  <option value="balanced">Balanced (cardio + strength)</option>
+                  <option value="strength">Strength / Weight training</option>
+                  <option value="cardio">Cardio dominant</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>{goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}</div>
+                <input type="number" placeholder={goal === "lose" ? "e.g. 68" : "e.g. 80"} step="0.1" value={form.targetWeight} onChange={e => setF("targetWeight", e.target.value)} style={inp} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Step 3: Review + edit targets ── */}
+        {step === 3 && calculated && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your targets</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>Calculated via Mifflin-St Jeor formula — edit any value if you prefer different targets.</div>
+
+            {/* TDEE breakdown */}
+            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--text2)", lineHeight: 2 }}>
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>BMR:</span> {calculated.bmr} kcal &nbsp;·&nbsp;
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>TDEE:</span> {calculated.tdee} kcal<br />
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>{goal === "lose" ? "Deficit" : "Surplus"}:</span> {Math.abs(calculated.tdee - calculated.cal)} kcal/day &nbsp;·&nbsp;
+              <span style={{ fontWeight: 700, color: goal === "lose" ? "var(--green)" : "var(--accent)" }}>
+                ~{Math.abs(((calculated.tdee - calculated.cal) * 7) / 7700).toFixed(2)} kg/week {goal === "lose" ? "loss" : "gain"}
+              </span>
+            </div>
+
+            {/* Editable targets */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
+              {[
+                { key: "cal", label: "kcal / day", color: "var(--accent)" },
+                { key: "pro", label: "Protein (g)", color: "var(--green)" },
+                { key: "fat", label: "Fat (g)", color: "var(--amber)" },
+              ].map(f => (
+                <div key={f.key} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 8px", textAlign: "center" }}>
+                  <input
+                    type="number"
+                    value={manualTargets[f.key]}
+                    onChange={e => setManualTargets(t => ({ ...t, [f.key]: e.target.value }))}
+                    style={{ background: "none", border: "none", fontSize: 22, fontWeight: 700, color: f.color, textAlign: "center", width: "100%", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+                  />
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", fontWeight: 600 }}>{f.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", marginBottom: 4 }}>Tap any number above to edit manually</div>
+          </>
+        )}
+
+        {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, background: "var(--accentBg)", padding: "8px 12px", borderRadius: 8, marginTop: 12 }}>{error}</div>}
+
+        <button onClick={step === 3 ? confirm : nextStep} style={nextBtn}>
+          {step === 2 ? "Calculate my targets →" : step === 3 ? "Start tracking →" : "Continue →"}
+        </button>
+        {step > 0 && <button onClick={() => { setError(""); setStep(s => s - 1); }} style={backBtn}>← Back</button>}
+      </div>
+
+      <button onClick={() => setDark(d => !d)} style={{ marginTop: 20, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text3)", fontFamily: "'DM Sans',sans-serif" }}>
+        {dark ? "☀️ Switch to Light" : "🌙 Switch to Dark"}
+      </button>
+    </div>
+  );
+}
+
+// ─── HealthPanel (top-level to prevent remount focus loss) ───────────────────
+function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps }) {
+  // Local state so typing doesn't trigger parent re-render and lose focus
+  const [localSteps, setLocalSteps] = useState(steps);
+
+  // Sync inward if parent steps changes (e.g. loaded from API)
+  useEffect(() => { setLocalSteps(steps); }, [steps]);
+
+  const bmi = wtHistory.length
+    ? (wtHistory[wtHistory.length - 1].value / (1.72 * 1.72)).toFixed(1)
+    : null;
+
+  return (
+    <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+      <div>
+        <Card title="Today's Tip" icon="✨">
+          <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 12, padding: "16px", fontSize: 14, color: "var(--accent)", fontWeight: 600, lineHeight: 1.6 }}>
+            {HEALTH_TIPS[tipIdx]}
+          </div>
+        </Card>
+        <Card title="Hydration Tracker" icon="💧">
+          <div style={{ textAlign: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue, #2563EB)" }}>{water}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today (goal: 8)</div>
+            <ProgBar val={water} max={8} color="#2563EB" />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <button onClick={() => handleWater(Math.max(0, water - 1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
+            <button onClick={() => handleWater(Math.min(15, water + 1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
+          </div>
+        </Card>
+      </div>
+      <div>
+        {bmi && (
+          <Card title="BMI Estimate" icon="📊">
+            <div style={{ textAlign: "center", padding: "8px 0" }}>
+              <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue, #2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
+                {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>Based on latest weight · 172cm assumed</div>
+            </div>
+          </Card>
+        )}
+        <Card title="Steps Tracker" icon="🚶">
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input
+              type="number"
+              value={localSteps}
+              placeholder="Enter steps today"
+              onChange={e => setLocalSteps(e.target.value)}
+              onBlur={e => handleSteps(e.target.value)}
+              style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+            />
+          </div>
+          {localSteps > 0 && (
+            <div>
+              <ProgBar val={parseInt(localSteps)} max={10000} color="var(--green)" />
+              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>
+                {parseInt(localSteps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
+                ≈ {Math.round(parseInt(localSteps) * 0.04)} kcal burned
+              </div>
+            </div>
+          )}
+        </Card>
+        <Card title="All Health Tips" icon="📋" defaultOpen={false}>
+          {HEALTH_TIPS.map((tip, i) => (
+            <div key={i} style={{ fontSize: 13, color: "var(--text2)", padding: "8px 0", borderBottom: i < HEALTH_TIPS.length - 1 ? "1px solid var(--border)" : "none" }}>{tip}</div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main app (post-login) ────────────────────────────────────────────────────
-function MainApp({ user, onLogout, dark, setDark }) {
-  const [items, setItems] = useState(() => store.get("vt_items", {}));
-  const [wholeEggs, setWholeEggs] = useState(() => store.get("vt_weggs", 0));
-  const [eggWhites, setEggWhites] = useState(() => store.get("vt_ewh", 0));
+function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal }) {
+  const TARGETS = userTargets || DEFAULT_TARGETS;
+  const [items, setItems] = useState({});
+  const [wholeEggs, setWholeEggs] = useState(0);
+  const [eggWhites, setEggWhites] = useState(0);
+  const [customFoods, setCustomFoods] = useState([]);
+  const [presetFoods, setPresetFoods] = useState(() => store.get("vt_preset_foods", FOODS));
   const [wtInput, setWtInput] = useState("");
-  const [wtHistory, setWtHistory] = useState(() => store.get("vt_wth", []));
+  const [wtHistory, setWtHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("tracker");
   const [tipIdx] = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
-  const [water, setWater] = useState(() => store.get("vt_water", 0));
-  const [steps, setSteps] = useState(() => store.get("vt_steps", ""));
+  const [quoteIdx] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
+  const [water, setWater] = useState(0);
+  const [steps, setSteps] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const syncTimer = useRef(null);
 
-  const macros = calcMacros(items, wholeEggs, eggWhites);
-  const rCal = TARGETS.cal - macros.cal;
+  const macros = calcMacros(items, wholeEggs, eggWhites, customFoods, presetFoods);  const rCal = TARGETS.cal - macros.cal;
   const rPro = TARGETS.pro - macros.pro;
   const rFat = TARGETS.fat - macros.fat;
 
-  useEffect(() => { store.set("vt_items", items); }, [items]);
-  useEffect(() => { store.set("vt_weggs", wholeEggs); }, [wholeEggs]);
-  useEffect(() => { store.set("vt_ewh", eggWhites); }, [eggWhites]);
-  useEffect(() => { store.set("vt_water", water); }, [water]);
+  // ── Load all data on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    async function loadAll() {
+      setLoadingData(true);
+      try {
+        const [log, weight, foods] = await Promise.all([
+          api.getLog(),
+          api.getWeight(),
+          api.getCustomFoods(),
+        ]);
+        setItems(log.items || {});
+        setWholeEggs(log.wholeEggs || 0);
+        setEggWhites(log.eggWhites || 0);
+        setWater(log.water || 0);
+        setSteps(log.steps || "");
+        setWtHistory(weight);
+        setCustomFoods(foods);
+      } catch (err) {
+        console.error("Load error:", err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    loadAll();
+  }, []);
 
-  function toggleItem(id) { setItems(prev => ({ ...prev, [id]: !prev[id] })); }
+  // ── Debounced log save ──────────────────────────────────────────────────────
+  function scheduleSave(patch) {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    setSyncing(true);
+    syncTimer.current = setTimeout(async () => {
+      try { await api.saveLog(patch); } catch (e) { console.error("Save error:", e); }
+      setSyncing(false);
+    }, 800);
+  }
 
-  function logWeight() {
+  function toggleItem(id) {
+    setItems(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      scheduleSave({ items: next });
+      return next;
+    });
+  }
+  function handleWholeEggs(v) { setWholeEggs(v); scheduleSave({ wholeEggs: v }); }
+  function handleEggWhites(v) { setEggWhites(v); scheduleSave({ eggWhites: v }); }
+  function handleWater(v) { setWater(v); scheduleSave({ water: v }); }
+  function handleSteps(v) { setSteps(v); scheduleSave({ steps: v }); }
+
+  async function addCustomFood(food) {
+    try {
+      const saved = await api.addCustomFood(food);
+      setCustomFoods(prev => [saved, ...prev]);
+    } catch (err) { console.error("Add food error:", err); }
+  }
+
+  function deletePresetFood(id) {
+    setPresetFoods(prev => {
+      const next = prev.filter(f => f.id !== id);
+      store.set("vt_preset_foods", next);
+      return next;
+    });
+    setItems(prev => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
+  }
+
+  function resetPresetFoods() {
+    setPresetFoods(FOODS);
+    store.set("vt_preset_foods", FOODS);
+  }
+
+  // Weight projection using Mifflin + current targets
+  function calcProjections() {
+    if (!userProfile?.weight || !userProfile?.height || !userProfile?.age) return null;
+    const { bmr, tdee } = calcMifflin({ ...userProfile, goal: userGoal });
+    const dailyDiff = TARGETS.cal - tdee;
+    const weeklyKg = (dailyDiff * 7) / 7700;
+    const curWeight = parseFloat(userProfile.weight);
+    return [
+      { label: "1 Week",   weeks: 1 },
+      { label: "2 Weeks",  weeks: 2 },
+      { label: "1 Month",  weeks: 4.33 },
+      { label: "2 Months", weeks: 8.66 },
+      { label: "3 Months", weeks: 13 },
+      { label: "6 Months", weeks: 26 },
+    ].map(p => {
+      const change = weeklyKg * p.weeks;
+      return { label: p.label, change: change.toFixed(1), projected: (curWeight + change).toFixed(1) };
+    });
+  }
+  async function toggleCustomFood(id) {
+    setCustomFoods(prev => {
+      const next = prev.map(f => f.id?.toString() === id.toString() || f._id?.toString() === id.toString()
+        ? { ...f, checked: !f.checked } : f);
+      const food = next.find(f => f.id?.toString() === id.toString() || f._id?.toString() === id.toString());
+      if (food) api.toggleCustomFood(id, food.checked).catch(console.error);
+      return next;
+    });
+  }
+  async function deleteCustomFood(id) {
+    setCustomFoods(prev => prev.filter(f => f.id?.toString() !== id.toString() && f._id?.toString() !== id.toString()));
+    api.deleteCustomFood(id).catch(console.error);
+  }
+
+  async function logWeight() {
     const v = parseFloat(wtInput);
     if (!v) return;
-    const entry = { date: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" }), value: v };
-    const nh = [...wtHistory, entry];
-    setWtHistory(nh); store.set("vt_wth", nh); setWtInput("");
+    try {
+      const entry = await api.logWeight(v);
+      setWtHistory(prev => [...prev, entry]);
+      setWtInput("");
+    } catch (err) { console.error("Weight log error:", err); }
   }
 
   function weightPrediction() {
@@ -467,6 +996,10 @@ function MainApp({ user, onLogout, dark, setDark }) {
               padding: "7px 6px", cursor: "pointer", fontSize: 12, color: "var(--text3)", fontFamily: "inherit"
             }}>Logout</button>
           </div>
+          <button onClick={onResetGoal} style={{
+            width: "100%", marginTop: 8, background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 8,
+            padding: "8px 0", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit", fontWeight: 600
+          }}>⚙ Edit Goals & Targets</button>
         </div>
       </div>
     );
@@ -495,94 +1028,168 @@ function MainApp({ user, onLogout, dark, setDark }) {
 
   // ── Content panels ──────────────────────────────────────────────────────────
 
+  const [showAddModal, setShowAddModal] = useState(false);
+
   function TrackerPanel() {
     return (
-      <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        {/* Left col */}
-        <div>
-          {/* Summary */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 20, marginBottom: 12, boxShadow: "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-              <MacroPill val={macros.cal} unit="" label="kcal" rem={rCal > 0 ? rCal + " left" : "✓ Met!"} color="var(--accent)" />
-              <MacroPill val={macros.pro} unit="g" label="protein" rem={rPro > 0 ? rPro.toFixed(0) + "g left" : "✓ Met!"} color="var(--green)" />
-              <MacroPill val={macros.fat} unit="g" label="fat" rem={rFat > 0 ? rFat.toFixed(0) + "g left" : "✓ Met!"} color="var(--amber)" />
+      <>
+        {showAddModal && <AddFoodModal onAdd={addCustomFood} onClose={() => setShowAddModal(false)} />}
+        <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+          {/* Left col */}
+          <div>
+            {/* Summary */}
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 20, marginBottom: 12, boxShadow: "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+                <MacroPill val={macros.cal} unit="" label="kcal" rem={rCal > 0 ? rCal + " left" : "✓ Met!"} color="var(--accent)" />
+                <MacroPill val={macros.pro} unit="g" label="protein" rem={rPro > 0 ? rPro.toFixed(0) + "g left" : "✓ Met!"} color="var(--green)" />
+                <MacroPill val={macros.fat} unit="g" label="fat" rem={rFat > 0 ? rFat.toFixed(0) + "g left" : "✓ Met!"} color="var(--amber)" />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {[
+                  { label: "Calories", val: macros.cal, max: TARGETS.cal, color: "var(--accent)" },
+                  { label: "Protein",  val: macros.pro, max: TARGETS.pro, color: "var(--green)" },
+                  { label: "Fat",      val: macros.fat, max: TARGETS.fat, color: "var(--amber)" },
+                ].map(p => (
+                  <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600, width: 60, flexShrink: 0 }}>{p.label}</span>
+                    <ProgBar val={p.val} max={p.max} color={p.color} />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {[
-                { label: "Calories", val: macros.cal, max: TARGETS.cal, color: "var(--accent)" },
-                { label: "Protein",  val: macros.pro, max: TARGETS.pro, color: "var(--green)" },
-                { label: "Fat",      val: macros.fat, max: TARGETS.fat, color: "var(--amber)" },
-              ].map(p => (
-                <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600, width: 60, flexShrink: 0 }}>{p.label}</span>
-                  <ProgBar val={p.val} max={p.max} color={p.color} />
+
+            {/* Motivation bar */}
+            <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "var(--accent)", fontWeight: 500, fontStyle: "italic", lineHeight: 1.5 }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>✨</span>
+              <span>"{MOTIVATIONAL_QUOTES[quoteIdx]}"</span>
+            </div>
+
+            {/* Food card */}
+            <Card title="Food" icon="🥗">
+              {sections.filter(sec => presetFoods.some(f => f.section === sec)).map(sec => {
+                const secFoods = presetFoods.filter(f => f.section === sec);
+                return (
+                  <div key={sec}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".07em", margin: "12px 0 8px" }}>{sec}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {secFoods.map(f => (
+                        <div key={f.id} style={{ position: "relative" }}>
+                          <FoodChip food={f} checked={!!items[f.id]} onToggle={() => toggleItem(f.id)} />
+                          <button onClick={() => deletePresetFood(f.id)} title="Remove food" style={{
+                            position: "absolute", top: 4, right: 4, background: "var(--bg3)", border: "none",
+                            borderRadius: 99, width: 18, height: 18, cursor: "pointer", fontSize: 9,
+                            color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center",
+                            lineHeight: 1, zIndex: 2, transition: "all .15s"
+                          }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {presetFoods.length === 0 && (
+                <div style={{ textAlign: "center", padding: "12px 0" }}>
+                  <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>All preset foods removed.</div>
+                  <button onClick={resetPresetFoods} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 12, color: "var(--text2)", fontFamily: "inherit" }}>↺ Restore presets</button>
                 </div>
-              ))}
-            </div>
+              )}
+              {presetFoods.length > 0 && (
+                <button onClick={resetPresetFoods} style={{ marginTop: 12, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", fontFamily: "inherit", textDecoration: "underline" }}>↺ Restore all preset foods</button>
+              )}
+            </Card>
+
+            {/* Custom Foods card */}
+            <Card title="My Custom Foods" icon="✏️">
+              <button onClick={() => setShowAddModal(true)} style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                background: "var(--accentBg)", border: "1.5px dashed var(--accent)", borderRadius: 10,
+                padding: "11px 0", cursor: "pointer", fontSize: 13, fontWeight: 700,
+                color: "var(--accent)", fontFamily: "inherit", marginBottom: customFoods.length ? 12 : 0,
+                transition: "all .2s"
+              }}>
+                ➕ Add Custom Food
+              </button>
+              {customFoods.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {customFoods.map(f => (
+                    <CustomFoodChip
+                      key={f.id}
+                      food={f}
+                      onToggle={() => toggleCustomFood(f.id)}
+                      onDelete={() => deleteCustomFood(f.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              {customFoods.length === 0 && (
+                <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, paddingTop: 10 }}>
+                  No custom foods yet — add your own meals above!
+                </div>
+              )}
+            </Card>
           </div>
 
-          {/* Suggestion bar */}
-          <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>
-            <span>💡</span><span>{getSuggestion()}</span>
+          {/* Right col */}
+          <div>
+            {/* Eggs */}
+            <Card title="Eggs" icon="🥚">
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {[
+                  { label: "Whole Eggs", val: wholeEggs, set: handleWholeEggs, sub: "70kcal · 6g P · 5g F each" },
+                  { label: "Egg Whites", val: eggWhites, set: handleEggWhites, sub: "17kcal · 3.6g P · 0g F each" },
+                ].map(e => (
+                  <div key={e.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{e.label}</div>
+                      <div style={{ fontSize: 11, color: "var(--text3)" }}>{e.sub}</div>
+                    </div>
+                    <Stepper val={e.val} onChange={e.set} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Projections card */}
+            <Card title="Weight Projection" icon="📈" defaultOpen={true}>
+              {(() => {
+                const projections = calcProjections();
+                if (!projections) return (
+                  <div style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: "12px 0" }}>
+                    Complete your goal setup to see projections.<br />
+                    <button onClick={onResetGoal} style={{ marginTop: 8, background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit" }}>⚙ Set Goals</button>
+                  </div>
+                );
+                return (
+                  <>
+                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>
+                      Based on your {TARGETS.cal} kcal/day target vs your TDEE
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {projections.map((p, i) => {
+                        const isLoss = parseFloat(p.change) < 0;
+                        const isGood = userGoal === "lose" ? isLoss : !isLoss;
+                        return (
+                          <div key={i} style={{
+                            background: isGood ? "var(--greenBg)" : "var(--accentBg)",
+                            border: `1px solid ${isGood ? "var(--green)" : "var(--accent)"}`,
+                            borderRadius: 10, padding: "12px",
+                          }}>
+                            <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 5 }}>{p.label}</div>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: isGood ? "var(--green)" : "var(--accent)", lineHeight: 1, marginBottom: 3 }}>
+                              {parseFloat(p.change) > 0 ? "+" : ""}{p.change} kg
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--text3)" }}>→ {p.projected} kg</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+            </Card>
           </div>
-
-          {/* Food card */}
-          <Card title="Food" icon="🥗">
-            {sections.map(sec => {
-              const foods = FOODS.filter(f => f.section === sec);
-              return (
-                <div key={sec}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".07em", margin: "12px 0 8px" }}>{sec}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {foods.map(f => <FoodChip key={f.id} food={f} checked={!!items[f.id]} onToggle={() => toggleItem(f.id)} />)}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
         </div>
-
-        {/* Right col */}
-        <div>
-          {/* Eggs */}
-          <Card title="Eggs" icon="🥚">
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {[
-                { label: "Whole Eggs", val: wholeEggs, set: setWholeEggs, sub: "70kcal · 6g P · 5g F each" },
-                { label: "Egg Whites", val: eggWhites, set: setEggWhites, sub: "17kcal · 3.6g P · 0g F each" },
-              ].map(e => (
-                <div key={e.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{e.label}</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{e.sub}</div>
-                  </div>
-                  <Stepper val={e.val} onChange={e.set} />
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Alternatives */}
-          <Card title="Alternatives to Hit Target" icon="🌱" defaultOpen={false}>
-            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>5–6 veg/egg options to complete your macros:</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {ALT_SUGGESTIONS.map((a, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px"
-                }}>
-                  <span style={{ fontSize: 20 }}>{a.tag.split(" ")[0]}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{a.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{a.cal}kcal · {a.pro}g P · {a.fat}g F</div>
-                  </div>
-                  <span style={{ fontSize: 11, background: "var(--accentBg)", color: "var(--accent)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>{a.tag.split(" ")[1]}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </div>
+      </>
     );
   }
 
@@ -623,68 +1230,8 @@ function MainApp({ user, onLogout, dark, setDark }) {
     );
   }
 
-  function HealthPanel() {
-    const bmi = wtHistory.length ? (wtHistory[wtHistory.length - 1].value / (1.72 * 1.72)).toFixed(1) : null;
-    return (
-      <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        <div>
-          <Card title="Today's Tip" icon="✨">
-            <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 12, padding: "16px", fontSize: 14, color: "var(--accent)", fontWeight: 600, lineHeight: 1.6 }}>
-              {HEALTH_TIPS[tipIdx]}
-            </div>
-          </Card>
-          <Card title="Hydration Tracker" icon="💧">
-            <div style={{ textAlign: "center", marginBottom: 12 }}>
-              <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue, #2563EB)" }}>{water}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses of 8 today (goal: 8)</div>
-              <ProgBar val={water} max={8} color="#2563EB" />
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button onClick={() => setWater(w => Math.max(0, w - 1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
-              <button onClick={() => setWater(w => Math.min(15, w + 1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
-            </div>
-          </Card>
-        </div>
-        <div>
-          {bmi && (
-            <Card title="BMI Estimate" icon="📊">
-              <div style={{ textAlign: "center", padding: "8px 0" }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue, #2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
-                <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
-                  {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>Based on latest weight · 172cm assumed</div>
-              </div>
-            </Card>
-          )}
-          <Card title="Steps Tracker" icon="🚶">
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <input value={steps} onChange={e => setSteps(e.target.value)} placeholder="Enter steps today"
-                type="number"
-                style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
-              />
-            </div>
-            {steps > 0 && (
-              <div>
-                <ProgBar val={parseInt(steps)} max={10000} color="var(--green)" />
-                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>
-                  {parseInt(steps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(steps)).toLocaleString()} more steps to goal`}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
-                  ≈ {Math.round(parseInt(steps) * 0.04)} kcal burned
-                </div>
-              </div>
-            )}
-          </Card>
-          <Card title="All Health Tips" icon="📋" defaultOpen={false}>
-            {HEALTH_TIPS.map((tip, i) => (
-              <div key={i} style={{ fontSize: 13, color: "var(--text2)", padding: "8px 0", borderBottom: i < HEALTH_TIPS.length - 1 ? "1px solid var(--border)" : "none" }}>{tip}</div>
-            ))}
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps };
+  
 
   function AIPanel() {
     return (
@@ -694,32 +1241,50 @@ function MainApp({ user, onLogout, dark, setDark }) {
     );
   }
 
-  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel />, ai: <AIPanel /> };
+  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel {...healthPanelProps} />, ai: <AIPanel /> };
+
+  if (loadingData) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 32, color: "var(--text)" }}>Vitals</div>
+        <div style={{ fontSize: 13, color: "var(--text3)" }}>Loading your data…</div>
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--bg3)", overflow: "hidden" }}>
+          <div style={{ width: "60%", height: "100%", background: "var(--accent)", borderRadius: 99, animation: "pulse 1.2s ease-in-out infinite" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
       {desktop && <Sidebar />}
-      <div style={{
-        flex: 1, overflowY: "auto",
-        padding: desktop ? "28px 32px" : "20px 16px 80px",
-      }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: desktop ? "28px 32px" : "20px 16px 80px" }}>
         {!desktop && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
             <div>
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: "var(--text)" }}>Vitals</div>
               <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>Hi, {user.name}</div>
             </div>
-            <button onClick={() => setDark(d => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 14px", cursor: "pointer", fontSize: 13, color: "var(--text2)", fontFamily: "inherit" }}>
-              {dark ? "☀️ Light" : "🌙 Dark"}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {syncing && <span style={{ fontSize: 11, color: "var(--text3)", animation: "pulse 1s infinite" }}>saving…</span>}
+              <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit", fontWeight: 600 }}>
+                ⚙ Goals
+              </button>
+              <button onClick={() => setDark(d => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 14px", cursor: "pointer", fontSize: 13, color: "var(--text2)", fontFamily: "inherit" }}>
+                {dark ? "☀️" : "🌙"}
+              </button>
+            </div>
           </div>
         )}
         {desktop && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
-              {navTabs.find(t => t.id === activeTab)?.icon} {navTabs.find(t => t.id === activeTab)?.label}
+          <div style={{ marginBottom: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
+                {navTabs.find(t => t.id === activeTab)?.icon} {navTabs.find(t => t.id === activeTab)?.label}
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome back, {user.name}</div>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome back, {user.name}</div>
+            {syncing && <span style={{ fontSize: 12, color: "var(--text3)", animation: "pulse 1s infinite" }}>☁️ Saving…</span>}
           </div>
         )}
         {panels[activeTab]}
@@ -731,11 +1296,33 @@ function MainApp({ user, onLogout, dark, setDark }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState(() => store.get("vt_user", null));
-  const [dark, setDark] = useState(() => store.get("vt_dark", false));
+  const [user, setUser] = useState(null);
+  const [dark, setDark] = useState(() => { try { return JSON.parse(localStorage.getItem("vt_dark")) ?? false; } catch { return false; } });
+  const [authChecking, setAuthChecking] = useState(true);
+  const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("vt_targets"));
+  const [userTargets, setUserTargets] = useState(() => store.get("vt_targets", DEFAULT_TARGETS));
+  const [userGoal, setUserGoal] = useState(() => localStorage.getItem("vt_goal") || "lose");
+  const [userProfile, setUserProfile] = useState(() => store.get("vt_profile", null));
+
+  // Restore session from saved token
+  useEffect(() => {
+    async function restoreSession() {
+      const token = localStorage.getItem("vt_token");
+      if (!token) { setAuthChecking(false); return; }
+      try {
+        const data = await api.me();
+        setUser(data.user);
+      } catch {
+        localStorage.removeItem("vt_token");
+      } finally {
+        setAuthChecking(false);
+      }
+    }
+    restoreSession();
+  }, []);
 
   useEffect(() => {
-    store.set("vt_dark", dark);
+    localStorage.setItem("vt_dark", JSON.stringify(dark));
     const t = dark ? DARK : LIGHT;
     const root = document.documentElement;
     Object.entries(t).forEach(([k, v]) => {
@@ -744,6 +1331,15 @@ export default function App() {
     });
     document.body.style.background = t.bg;
     document.body.style.color = t.text;
+    // Update spinner colors for dark/light
+    const existingSpinner = document.getElementById("vt-spinner");
+    if (existingSpinner) existingSpinner.remove();
+    const sp = document.createElement("style");
+    sp.id = "vt-spinner";
+    sp.textContent = dark
+      ? `input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{background:#3A362D;filter:invert(1) brightness(2);border-radius:3px;}`
+      : `input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{background:#E4E0D6;filter:none;border-radius:3px;}`;
+    document.head.appendChild(sp);
   }, [dark]);
 
   // Inject fonts + global styles once
@@ -757,8 +1353,48 @@ export default function App() {
     if (!document.getElementById("vt-global")) {
       const s = document.createElement("style");
       s.id = "vt-global";
-      s.textContent = `*{box-sizing:border-box;margin:0;padding:0} body{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;transition:background .25s,color .25s} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`;
+      s.textContent = `
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;transition:background .25s,color .25s}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button{
+          opacity:1;
+          background:var(--surface3,#2A2D31);
+          border-radius:4px;
+          cursor:pointer;
+        }
+      `;
       document.head.appendChild(s);
+    }
+    // ── Dark mode spinner fix — re-inject when dark changes ──
+    const existingSpinner = document.getElementById("vt-spinner");
+    if (existingSpinner) existingSpinner.remove();
+    const sp = document.createElement("style");
+    sp.id = "vt-spinner";
+    sp.textContent = dark
+      ? `input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{background:#3A362D;filter:invert(1) brightness(1.8);}`
+      : `input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{background:#E4E0D6;filter:none;}`;
+    document.head.appendChild(sp);
+    // ── Favicon "V" ──
+    if (!document.getElementById("vt-favicon")) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 32; canvas.height = 32;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#D4582A";
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 32, 32, 8);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 22px 'DM Serif Display', serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("V", 16, 17);
+      const link = document.createElement("link");
+      link.id = "vt-favicon";
+      link.rel = "icon";
+      link.href = canvas.toDataURL();
+      document.head.appendChild(link);
     }
     if (!document.getElementById("chartjs")) {
       const sc = document.createElement("script");
@@ -767,9 +1403,43 @@ export default function App() {
     }
   }, []);
 
-  function handleAuth(u) { setUser(u); store.set("vt_user", u); }
-  function handleLogout() { setUser(null); store.set("vt_user", null); }
+  function handleAuth(u) { setUser(u); }
+  function handleLogout() { setUser(null); localStorage.removeItem("vt_token"); }
+
+  function handleOnboardingComplete({ goal, profile, targets }) {
+    setUserGoal(goal);
+    setUserProfile(profile);
+    setUserTargets(targets);
+    localStorage.setItem("vt_goal", goal);
+    store.set("vt_profile", profile);
+    store.set("vt_targets", targets);
+    setOnboardingDone(true);
+  }
+
+  function handleResetGoal() {
+    setOnboardingDone(false);
+  }
+
+  if (authChecking) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 32, color: "var(--text)" }}>Vitals</div>
+      </div>
+    );
+  }
 
   if (!user) return <AuthPage onAuth={handleAuth} />;
-  return <MainApp user={user} onLogout={handleLogout} dark={dark} setDark={setDark} />;
+  if (!onboardingDone) return <OnboardingPage onComplete={handleOnboardingComplete} dark={dark} setDark={setDark} />;
+  return (
+    <MainApp
+      user={user}
+      onLogout={handleLogout}
+      dark={dark}
+      setDark={setDark}
+      userTargets={userTargets}
+      userGoal={userGoal}
+      userProfile={userProfile}
+      onResetGoal={handleResetGoal}
+    />
+  );
 }
