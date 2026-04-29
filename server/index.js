@@ -48,7 +48,8 @@ function auth(req, res, next) {
   }
 }
 
-function requireDB(req, res, next) {
+async function requireDB(req, res, next) {
+  if (!db) await connectDB();  // ← wait for connection if not ready
   if (!db) return res.status(503).json({ error: "Database not connected. Check MONGODB_URI in server/.env" });
   next();
 }
