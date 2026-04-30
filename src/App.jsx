@@ -31,7 +31,7 @@ const MACROS = {
   rice:     { cal: 250, pro: 4,  fat: 0.5, label: "Rice" },
   paneer50: { cal: 102,  pro: 12.5, fat: 4.5,   label: "Paneer 50g" },
   paneer100:{ cal: 203.8, pro: 25, fat: 9,   label: "Paneer 100g" },
-  dal:      { cal: 320, pro: 19, fat: 3,   label: "Dal" },
+  dal:      { cal: 300, pro: 15, fat: 3,   label: "Dal" },
   soya:     { cal: 175, pro: 25, fat: 1,  label: "Soya Chunks" },
   wholeEgg: { cal: 67,  pro: 6,  fat: 5,   label: "Whole Egg" },
   eggWhite: { cal: 17,  pro: 3.6, fat: 0,   label: "Egg White" },
