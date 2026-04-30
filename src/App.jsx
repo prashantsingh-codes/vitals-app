@@ -90,7 +90,6 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-// Returns today's date string as YYYY-MM-DD in local time
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -420,6 +419,21 @@ function OnboardingPage({ onComplete, dark, setDark }) {
       if (!form.age || !form.weight || !form.height) { setError("Please fill all fields"); return; }
     }
     if (step === 2) {
+      // ── VALIDATION: target weight must make sense for the chosen goal ──
+      if (form.targetWeight) {
+        const current = parseFloat(form.weight);
+        const target = parseFloat(form.targetWeight);
+        if (!isNaN(current) && !isNaN(target)) {
+          if (goal === "lose" && target >= current) {
+            setError(`For fat loss your target weight must be less than your current weight (${current} kg). Please enter a value below ${current} kg.`);
+            return;
+          }
+          if (goal === "gain" && target <= current) {
+            setError(`For muscle gain your target weight must be greater than your current weight (${current} kg). Please enter a value above ${current} kg.`);
+            return;
+          }
+        }
+      }
       const res = calcMifflin({ ...form, goal });
       setCalculated(res);
       setManualTargets({ cal: res.cal, pro: res.pro, fat: res.fat });
@@ -436,6 +450,16 @@ function OnboardingPage({ onComplete, dark, setDark }) {
   const cardStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 420, boxShadow: "0 8px 32px rgba(26,24,20,.12)" };
   const nextBtn = { width: "100%", background: "var(--accent)", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "'DM Sans',sans-serif", marginTop: 18, transition: "all .2s" };
   const backBtn = { background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", marginTop: 10, width: "100%", textAlign: "center" };
+
+  // Helper: hint text for target weight field
+  const targetWeightHint = () => {
+    if (!form.weight) return null;
+    const current = parseFloat(form.weight);
+    if (isNaN(current)) return null;
+    if (goal === "lose") return `Must be less than ${current} kg`;
+    if (goal === "gain") return `Must be greater than ${current} kg`;
+    return null;
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -550,8 +574,47 @@ function OnboardingPage({ onComplete, dark, setDark }) {
               </div>
 
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>{goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}</div>
-                <input type="number" placeholder={goal === "lose" ? "e.g. 68" : "e.g. 80"} step="0.1" value={form.targetWeight} onChange={e => setF("targetWeight", e.target.value)} style={inp} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>
+                    {goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}
+                  </div>
+                  {/* ── Inline hint so user knows what's valid before they hit Next ── */}
+                  {targetWeightHint() && (
+                    <div style={{ fontSize: 11, color: goal === "lose" ? "var(--blue)" : "var(--green)", fontWeight: 600 }}>
+                      {targetWeightHint()}
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  placeholder={goal === "lose" ? "e.g. 68" : "e.g. 80"}
+                  step="0.1"
+                  value={form.targetWeight}
+                  onChange={e => { setF("targetWeight", e.target.value); setError(""); }}
+                  style={{
+                    ...inp,
+                    // Highlight border red if value is invalid (non-empty + wrong direction)
+                    border: (() => {
+                      if (!form.targetWeight || !form.weight) return "1px solid var(--border2)";
+                      const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
+                      if (isNaN(cur) || isNaN(tgt)) return "1px solid var(--border2)";
+                      if (goal === "lose" && tgt >= cur) return "1.5px solid var(--accent)";
+                      if (goal === "gain" && tgt <= cur) return "1.5px solid var(--accent)";
+                      return "1.5px solid var(--green)";
+                    })()
+                  }}
+                />
+                {/* ── Real-time inline error below the field ── */}
+                {(() => {
+                  if (!form.targetWeight || !form.weight) return null;
+                  const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
+                  if (isNaN(cur) || isNaN(tgt)) return null;
+                  if (goal === "lose" && tgt >= cur)
+                    return <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 5, fontWeight: 600 }}>⚠ Target must be below {cur} kg for fat loss</div>;
+                  if (goal === "gain" && tgt <= cur)
+                    return <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 5, fontWeight: 600 }}>⚠ Target must be above {cur} kg for muscle gain</div>;
+                  return <div style={{ fontSize: 11, color: "var(--green)", marginTop: 5, fontWeight: 600 }}>✓ Looks good!</div>;
+                })()}
               </div>
             </div>
           </>
@@ -609,12 +672,10 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 }
 
 // ─── HealthPanel ─────────────────────────────────────────────────────────────
-// FIX: Added userProfile as an explicit prop (was referenced as a free variable before)
 function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile }) {
   const [localSteps, setLocalSteps] = useState(steps);
   useEffect(() => { setLocalSteps(steps); }, [steps]);
 
-  // FIX: Use actual profile height; fall back to null if missing so BMI card is hidden
   const heightCm = parseFloat(userProfile?.height);
   const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
   const bmi = (heightCm > 0 && latestWeight)
@@ -642,7 +703,6 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
         </Card>
       </div>
       <div>
-        {/* FIX: Show BMI card only when both height (from profile) and a weight entry exist */}
         {bmi !== null && (
           <Card title="BMI Estimate" icon="📊">
             <div style={{ textAlign: "center", padding: "8px 0" }}>
@@ -650,7 +710,6 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
               <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
                 {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
               </div>
-              {/* FIX: Show actual height used instead of hardcoded "172cm assumed" */}
               <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>
                 Based on latest weight · {heightCm}cm height
               </div>
@@ -691,7 +750,68 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
 }
 
 // ─── WeightPanel ──────────────────────────────────────────────────────────────
-function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, dark, pred, desktop }) {
+function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, dark, pred, desktop }) {
+  // ── Edit / delete state ────────────────────────────────────────────────────
+  const [editingIdx, setEditingIdx] = useState(null);   // index in reversed slice
+  const [editValue, setEditValue] = useState("");
+
+  // We display reversed history (newest first). Map back to original index:
+  // reversedIdx → original index = (wtHistory.length - 1) - reversedIdx
+  function origIdx(reversedIdx) {
+    return wtHistory.length - 1 - reversedIdx;
+  }
+
+  function startEdit(reversedIdx) {
+    setEditingIdx(reversedIdx);
+    setEditValue(String(wtHistory[origIdx(reversedIdx)].value));
+  }
+
+  async function saveEdit(reversedIdx) {
+    const v = parseFloat(editValue);
+    if (!v || v <= 0) { setEditingIdx(null); return; }
+    const idx = origIdx(reversedIdx);
+    const entry = wtHistory[idx];
+    try {
+      // Optimistic update
+      setWtHistory(prev => {
+        const next = [...prev];
+        next[idx] = { ...entry, value: v };
+        return next;
+      });
+      await api.updateWeight(entry._id || entry.id, v);
+    } catch (err) {
+      console.error("Update weight error:", err);
+      // Revert on error
+      setWtHistory(prev => {
+        const next = [...prev];
+        next[idx] = entry;
+        return next;
+      });
+    }
+    setEditingIdx(null);
+  }
+
+  async function deleteEntry(reversedIdx) {
+    const idx = origIdx(reversedIdx);
+    const entry = wtHistory[idx];
+    try {
+      // Optimistic remove
+      setWtHistory(prev => prev.filter((_, i) => i !== idx));
+      await api.deleteWeight(entry._id || entry.id);
+    } catch (err) {
+      console.error("Delete weight error:", err);
+      // Revert
+      setWtHistory(prev => {
+        const next = [...prev];
+        next.splice(idx, 0, entry);
+        return next;
+      });
+    }
+    if (editingIdx === reversedIdx) setEditingIdx(null);
+  }
+
+  const displayHistory = [...wtHistory].reverse().slice(0, 10);
+
   return (
     <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
       <Card title="Log Weight" icon="⚖️">
@@ -714,15 +834,80 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, dark, pred, de
           </div>
         )}
       </Card>
+
       <Card title="Weight History" icon="📅">
         {wtHistory.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No entries yet</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {[...wtHistory].reverse().slice(0, 10).map((h, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--surface2)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                <span style={{ fontSize: 13, color: "var(--text2)" }}>{h.date}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>{h.value} kg</span>
+            {displayHistory.map((h, reversedIdx) => (
+              <div key={reversedIdx} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 12px",
+                background: editingIdx === reversedIdx ? "var(--accentBg)" : "var(--surface2)",
+                borderRadius: 10,
+                border: editingIdx === reversedIdx ? "1px solid var(--accent)" : "1px solid var(--border)",
+                transition: "all .2s"
+              }}>
+                {/* Date */}
+                <span style={{ fontSize: 12, color: "var(--text3)", flex: 1, minWidth: 0 }}>{h.date}</span>
+
+                {/* Value — editable inline or static */}
+                {editingIdx === reversedIdx ? (
+                  <input
+                    autoFocus
+                    type="number"
+                    step="0.1"
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") saveEdit(reversedIdx);
+                      if (e.key === "Escape") setEditingIdx(null);
+                    }}
+                    style={{
+                      width: 72, background: "var(--surface)", border: "1px solid var(--accent)",
+                      borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700,
+                      color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right"
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
+                )}
+
+                {/* Action buttons */}
+                {editingIdx === reversedIdx ? (
+                  <>
+                    {/* Save */}
+                    <button
+                      onClick={() => saveEdit(reversedIdx)}
+                      title="Save"
+                      style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "opacity .15s" }}
+                    >
+                      <svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>
+                    </button>
+                    {/* Cancel */}
+                    <button
+                      onClick={() => setEditingIdx(null)}
+                      title="Cancel"
+                      style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}
+                    >✕</button>
+                  </>
+                ) : (
+                  <>
+                    {/* Edit */}
+                    <button
+                      onClick={() => startEdit(reversedIdx)}
+                      title="Edit"
+                      style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, transition: "border-color .15s, background .15s" }}
+                    >✏️</button>
+                    {/* Delete */}
+                    <button
+                      onClick={() => deleteEntry(reversedIdx)}
+                      title="Delete"
+                      style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, transition: "border-color .15s, background .15s" }}
+                    >🗑</button>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -757,35 +942,26 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const rPro = TARGETS.pro - macros.pro;
   const rFat = TARGETS.fat - macros.fat;
 
-  // ── Midnight reset logic ────────────────────────────────────────────────────
-  // On mount and every minute: if the stored log date differs from today, clear daily fields.
   useEffect(() => {
     function checkMidnightReset() {
       const lastDate = localStorage.getItem("vt_log_date");
       const today = todayStr();
       if (lastDate && lastDate !== today) {
-        // Reset all daily-reset fields
         setItems({});
         setWholeEggs(0);
         setEggWhites(0);
         setWater(0);
         setSteps("");
-        // Uncheck custom foods but keep the library
         setCustomFoods(prev => prev.map(f => ({ ...f, checked: false })));
-        // Persist the reset to the server
         api.saveLog({ items: {}, wholeEggs: 0, eggWhites: 0, water: 0, steps: "" }).catch(console.error);
-        // Update custom food checked states on server
-        // (individual toggles will be false already; a bulk uncheck via the API if supported)
       }
       localStorage.setItem("vt_log_date", today);
     }
-
     checkMidnightReset();
-    const interval = setInterval(checkMidnightReset, 60 * 1000); // check every minute
+    const interval = setInterval(checkMidnightReset, 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // ── Load all data on mount ──────────────────────────────────────────────────
   useEffect(() => {
     async function loadAll() {
       setLoadingData(true);
@@ -811,7 +987,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     loadAll();
   }, []);
 
-  // ── Debounced log save ──────────────────────────────────────────────────────
   function scheduleSave(patch) {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
@@ -898,14 +1073,13 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     } catch (err) { console.error("Weight log error:", err); }
   }
 
-  // FIX: Removed duplicate if (rate <= 0) check and unreachable second return statement
   function weightPrediction() {
     if (wtHistory.length < 2) return null;
     const first = wtHistory[0].value, last = wtHistory[wtHistory.length - 1].value;
     const isLosing = userGoal === "lose";
     const rate = isLosing
-      ? (first - last) / wtHistory.length   // positive when losing
-      : (last - first) / wtHistory.length;  // positive when gaining
+      ? (first - last) / wtHistory.length
+      : (last - first) / wtHistory.length;
     if (rate <= 0) return isLosing
       ? "No downward trend yet — keep going!"
       : "No upward trend yet — keep eating!";
@@ -1120,12 +1294,20 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     );
   }
 
-  // FIX: Added userProfile to healthPanelProps so HealthPanel receives it as a proper prop
   const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile };
 
   const panels = {
     tracker: <TrackerPanel />,
-    weight: <WeightPanel wtInput={wtInput} setWtInput={setWtInput} logWeight={logWeight} wtHistory={wtHistory} dark={dark} pred={pred} desktop={desktop} />,
+    weight: <WeightPanel
+      wtInput={wtInput}
+      setWtInput={setWtInput}
+      logWeight={logWeight}
+      wtHistory={wtHistory}
+      setWtHistory={setWtHistory}
+      dark={dark}
+      pred={pred}
+      desktop={desktop}
+    />,
     health: <HealthPanel {...healthPanelProps} />
   };
 
