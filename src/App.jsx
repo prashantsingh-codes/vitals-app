@@ -384,8 +384,8 @@ function calcMifflin({ weight, height, age, gender, activity, goal, steps = "500
   const tdee = Math.round(bmr * actMultiplier * 0.81) + stepsBonus;
   let cal, pro, fat;
   if (goal === "lose") {
-    cal = tdee - 500;
-    pro = Math.round(w * 2.0);
+    cal = tdee - 450;
+    pro = Math.round(w * 1.9);
     fat = Math.round((cal * 0.25) / 9);
   } else {
     cal = tdee + 400;
