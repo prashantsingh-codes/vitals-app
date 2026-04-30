@@ -26,7 +26,7 @@ const DARK = {
 // ─── Macros data ──────────────────────────────────────────────────────────────
 const MACROS = {
   milk:     { cal: 85,  pro: 6,  fat: 3,   label: "Milk" },
-  oats:     { cal: 111, pro: 3.75,  fat: 2.4,   label: "Oats" },
+  oats:     { cal: 111, pro: 3.8,  fat: 2.4,   label: "Oats" },
   whey:     { cal: 140, pro: 25, fat: 1.8,   label: "Whey" },
   rice:     { cal: 250, pro: 4,  fat: 0.5, label: "Rice" },
   paneer50: { cal: 102,  pro: 12.5, fat: 4.5,   label: "Paneer 50g" },
