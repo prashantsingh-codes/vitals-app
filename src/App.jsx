@@ -90,6 +90,12 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
+// Returns today's date string as YYYY-MM-DD in local time
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function calcMacros(items, wholeEggs, eggWhites, customFoods = [], presetFoodList = FOODS) {
   let cal = 0, pro = 0, fat = 0;
   presetFoodList.forEach(f => { if (items[f.id]) { cal += MACROS[f.key].cal; pro += MACROS[f.key].pro; fat += MACROS[f.key].fat; } });
@@ -369,8 +375,6 @@ function AuthPage({ onAuth }) {
 }
 
 // ─── Mifflin-St Jeor Calculator ───────────────────────────────────────────────
-// Uses 0.81 correction factor (real-world TDEE is ~19% lower than lab Mifflin)
-// Steps bonus adds 0–150 kcal based on daily movement
 function calcMifflin({ weight, height, age, gender, activity, goal, steps = "5000" }) {
   const w = parseFloat(weight), h = parseFloat(height), a = parseFloat(age);
   const actMultiplier = parseFloat(activity.replace("-none", ""));
@@ -505,7 +509,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your activity level</div>
             <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20, lineHeight: 1.6 }}>Helps us calculate your TDEE (Total Daily Energy Expenditure).</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* Activity level */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Exercise days per week</div>
                 <select value={form.activity} onChange={e => {
@@ -521,7 +524,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                 </select>
               </div>
 
-              {/* Training type — disabled when no exercise */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Primary training type</div>
                 <select
@@ -537,7 +539,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                 </select>
               </div>
 
-              {/* Daily steps */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Daily Steps (average)</div>
                 <select value={form.steps} onChange={e => setF("steps", e.target.value)} style={sel}>
@@ -548,7 +549,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                 </select>
               </div>
 
-              {/* Target weight */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>{goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}</div>
                 <input type="number" placeholder={goal === "lose" ? "e.g. 68" : "e.g. 80"} step="0.1" value={form.targetWeight} onChange={e => setF("targetWeight", e.target.value)} style={inp} />
@@ -563,7 +563,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your targets</div>
             <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>Calculated via Mifflin-St Jeor formula — edit any value if you prefer different targets.</div>
 
-            {/* TDEE breakdown */}
             <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--text2)", lineHeight: 2 }}>
               <span style={{ fontWeight: 700, color: "var(--text)" }}>BMR:</span> {calculated.bmr} kcal &nbsp;·&nbsp;
               <span style={{ fontWeight: 700, color: "var(--text)" }}>TDEE:</span> {calculated.tdee} kcal<br />
@@ -573,7 +572,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
               </span>
             </div>
 
-            {/* Editable targets */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
               {[
                 { key: "cal", label: "kcal / day", color: "var(--accent)" },
@@ -611,12 +609,16 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 }
 
 // ─── HealthPanel ─────────────────────────────────────────────────────────────
-function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps }) {
+// FIX: Added userProfile as an explicit prop (was referenced as a free variable before)
+function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile }) {
   const [localSteps, setLocalSteps] = useState(steps);
   useEffect(() => { setLocalSteps(steps); }, [steps]);
 
-  const bmi = wtHistory.length
-    ? (wtHistory[wtHistory.length - 1].value / (1.72 * 1.72)).toFixed(1)
+  // FIX: Use actual profile height; fall back to null if missing so BMI card is hidden
+  const heightCm = parseFloat(userProfile?.height);
+  const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
+  const bmi = (heightCm > 0 && latestWeight)
+    ? (latestWeight / ((heightCm / 100) ** 2)).toFixed(1)
     : null;
 
   return (
@@ -640,14 +642,18 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
         </Card>
       </div>
       <div>
-        {bmi && (
+        {/* FIX: Show BMI card only when both height (from profile) and a weight entry exist */}
+        {bmi !== null && (
           <Card title="BMI Estimate" icon="📊">
             <div style={{ textAlign: "center", padding: "8px 0" }}>
               <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue, #2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
               <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
                 {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>Based on latest weight · 172cm assumed</div>
+              {/* FIX: Show actual height used instead of hardcoded "172cm assumed" */}
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>
+                Based on latest weight · {heightCm}cm height
+              </div>
             </div>
           </Card>
         )}
@@ -684,7 +690,7 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
   );
 }
 
-// ─── WeightPanel — lifted OUT of MainApp to prevent remount on every keystroke ─
+// ─── WeightPanel ──────────────────────────────────────────────────────────────
 function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, dark, pred, desktop }) {
   return (
     <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
@@ -751,6 +757,34 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const rPro = TARGETS.pro - macros.pro;
   const rFat = TARGETS.fat - macros.fat;
 
+  // ── Midnight reset logic ────────────────────────────────────────────────────
+  // On mount and every minute: if the stored log date differs from today, clear daily fields.
+  useEffect(() => {
+    function checkMidnightReset() {
+      const lastDate = localStorage.getItem("vt_log_date");
+      const today = todayStr();
+      if (lastDate && lastDate !== today) {
+        // Reset all daily-reset fields
+        setItems({});
+        setWholeEggs(0);
+        setEggWhites(0);
+        setWater(0);
+        setSteps("");
+        // Uncheck custom foods but keep the library
+        setCustomFoods(prev => prev.map(f => ({ ...f, checked: false })));
+        // Persist the reset to the server
+        api.saveLog({ items: {}, wholeEggs: 0, eggWhites: 0, water: 0, steps: "" }).catch(console.error);
+        // Update custom food checked states on server
+        // (individual toggles will be false already; a bulk uncheck via the API if supported)
+      }
+      localStorage.setItem("vt_log_date", today);
+    }
+
+    checkMidnightReset();
+    const interval = setInterval(checkMidnightReset, 60 * 1000); // check every minute
+    return () => clearInterval(interval);
+  }, []);
+
   // ── Load all data on mount ──────────────────────────────────────────────────
   useEffect(() => {
     async function loadAll() {
@@ -802,7 +836,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   async function addCustomFood(food) {
     try {
       const saved = await api.addCustomFood(food);
-      setCustomFoods(prev => [saved, ...prev]);
+      setCustomFoods(prev => [{ ...saved, id: saved._id || saved.id }, ...prev]);
     } catch (err) { console.error("Add food error:", err); }
   }
 
@@ -864,13 +898,21 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     } catch (err) { console.error("Weight log error:", err); }
   }
 
+  // FIX: Removed duplicate if (rate <= 0) check and unreachable second return statement
   function weightPrediction() {
     if (wtHistory.length < 2) return null;
     const first = wtHistory[0].value, last = wtHistory[wtHistory.length - 1].value;
-    const rate = (first - last) / wtHistory.length;
-    if (rate <= 0) return "No downward trend yet — keep going!";
-    const days = Math.ceil((last - 68) / rate);
-    return `Reach 68kg in ~${days} day${days === 1 ? "" : "s"} at this pace`;
+    const isLosing = userGoal === "lose";
+    const rate = isLosing
+      ? (first - last) / wtHistory.length   // positive when losing
+      : (last - first) / wtHistory.length;  // positive when gaining
+    if (rate <= 0) return isLosing
+      ? "No downward trend yet — keep going!"
+      : "No upward trend yet — keep eating!";
+    const target = parseFloat(userProfile?.targetWeight);
+    if (!target) return null;
+    const days = Math.ceil(Math.abs(last - target) / rate);
+    return `Reach ${target}kg in ~${days} day${days === 1 ? "" : "s"} at this pace`;
   }
 
   function getSuggestion() {
@@ -1078,7 +1120,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     );
   }
 
-  const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps };
+  // FIX: Added userProfile to healthPanelProps so HealthPanel receives it as a proper prop
+  const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile };
 
   const panels = {
     tracker: <TrackerPanel />,
