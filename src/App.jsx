@@ -766,30 +766,41 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
     setEditValue(String(wtHistory[origIdx(reversedIdx)].value));
   }
 
-  async function saveEdit(reversedIdx) {
-    const v = parseFloat(editValue);
-    if (!v || v <= 0) { setEditingIdx(null); return; }
-    const idx = origIdx(reversedIdx);
-    const entry = wtHistory[idx];
-    try {
-      // Optimistic update
-      setWtHistory(prev => {
-        const next = [...prev];
-        next[idx] = { ...entry, value: v };
-        return next;
-      });
-      await api.updateWeight(entry._id || entry.id, v);
-    } catch (err) {
-      console.error("Update weight error:", err);
-      // Revert on error
-      setWtHistory(prev => {
-        const next = [...prev];
-        next[idx] = entry;
-        return next;
-      });
-    }
+async function saveEdit(reversedIdx) {
+  const v = parseFloat(editValue);
+  if (!v || v <= 0) { setEditingIdx(null); return; }
+
+  const idx = origIdx(reversedIdx);
+  const entry = wtHistory[idx];
+  
+  // ← THIS is the fix: surface the ID problem immediately
+  const entryId = entry._id || entry.id;
+  if (!entryId) {
+    console.error("No ID on weight entry:", entry);
     setEditingIdx(null);
+    return;
   }
+
+  const original = { ...entry };
+  setWtHistory(prev => {
+    const next = [...prev];
+    next[idx] = { ...entry, value: v };
+    return next;
+  });
+  setEditingIdx(null); // close edit mode optimistically
+
+  try {
+    await api.updateWeight(entryId, v);
+  } catch (err) {
+    console.error("Update weight error:", err);
+    // Revert on failure
+    setWtHistory(prev => {
+      const next = [...prev];
+      next[idx] = original;
+      return next;
+    });
+  }
+}
 
   async function deleteEntry(reversedIdx) {
     const idx = origIdx(reversedIdx);
