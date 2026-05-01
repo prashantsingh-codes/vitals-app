@@ -31,6 +31,7 @@ export const api = {
   // Weight
   getWeight:    ()       => request("GET",    "/api/weight"),
   logWeight:    (value)  => request("POST",   "/api/weight", { value }),
+  updateWeight: (id, value)   => request("PUT",    `/api/weight/${id}`, { value }),
   deleteWeight: (id)     => request("DELETE", `/api/weight/${id}`),
 
   // Custom foods
