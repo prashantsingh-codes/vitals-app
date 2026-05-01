@@ -156,6 +156,22 @@ app.post("/api/weight", auth, requireDB, async (req, res) => {
   }
 });
 
+app.put("/api/weight/:id", auth, requireDB, async (req, res) => {
+  try {
+    const { value } = req.body;
+    if (!value || isNaN(value)) return res.status(400).json({ error: "Invalid weight value" });
+    const result = await db.collection("weight").findOneAndUpdate(
+      { _id: new ObjectId(req.params.id), userId: req.userId },
+      { $set: { value: parseFloat(value) } },
+      { returnDocument: "after" }
+    );
+    if (!result) return res.status(404).json({ error: "Entry not found" });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update weight entry" });
+  }
+});
+
 app.delete("/api/weight/:id", auth, requireDB, async (req, res) => {
   try {
     await db.collection("weight").deleteOne({ _id: new ObjectId(req.params.id), userId: req.userId });
