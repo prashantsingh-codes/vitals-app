@@ -419,7 +419,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
       if (!form.age || !form.weight || !form.height) { setError("Please fill all fields"); return; }
     }
     if (step === 2) {
-      // ── VALIDATION: target weight must make sense for the chosen goal ──
       if (form.targetWeight) {
         const current = parseFloat(form.weight);
         const target = parseFloat(form.targetWeight);
@@ -451,7 +450,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
   const nextBtn = { width: "100%", background: "var(--accent)", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "'DM Sans',sans-serif", marginTop: 18, transition: "all .2s" };
   const backBtn = { background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", marginTop: 10, width: "100%", textAlign: "center" };
 
-  // Helper: hint text for target weight field
   const targetWeightHint = () => {
     if (!form.weight) return null;
     const current = parseFloat(form.weight);
@@ -468,7 +466,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
         <div style={{ fontSize: 12, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 4 }}>Your nutrition companion</div>
       </div>
 
-      {/* Step dots */}
       <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
         {[0,1,2,3].map(i => (
           <div key={i} style={{ height: 6, borderRadius: 99, background: step === i ? "var(--accent)" : "var(--border2)", width: step === i ? 22 : 6, transition: "all .3s" }} />
@@ -476,7 +473,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
       </div>
 
       <div style={cardStyle}>
-        {/* ── Step 0: Goal ── */}
         {step === 0 && (
           <>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>What's your goal?</div>
@@ -500,7 +496,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
           </>
         )}
 
-        {/* ── Step 1: Basic info ── */}
         {step === 1 && (
           <>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>About you</div>
@@ -527,7 +522,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
           </>
         )}
 
-        {/* ── Step 2: Activity ── */}
         {step === 2 && (
           <>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your activity level</div>
@@ -578,7 +572,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>
                     {goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}
                   </div>
-                  {/* ── Inline hint so user knows what's valid before they hit Next ── */}
                   {targetWeightHint() && (
                     <div style={{ fontSize: 11, color: goal === "lose" ? "var(--blue)" : "var(--green)", fontWeight: 600 }}>
                       {targetWeightHint()}
@@ -593,7 +586,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                   onChange={e => { setF("targetWeight", e.target.value); setError(""); }}
                   style={{
                     ...inp,
-                    // Highlight border red if value is invalid (non-empty + wrong direction)
                     border: (() => {
                       if (!form.targetWeight || !form.weight) return "1px solid var(--border2)";
                       const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
@@ -604,7 +596,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                     })()
                   }}
                 />
-                {/* ── Real-time inline error below the field ── */}
                 {(() => {
                   if (!form.targetWeight || !form.weight) return null;
                   const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
@@ -620,7 +611,6 @@ function OnboardingPage({ onComplete, dark, setDark }) {
           </>
         )}
 
-        {/* ── Step 3: Review + edit targets ── */}
         {step === 3 && calculated && (
           <>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your targets</div>
@@ -722,8 +712,10 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
               type="number"
               value={localSteps}
               placeholder="Enter steps today"
-              onChange={e => setLocalSteps(e.target.value)}
-              onBlur={e => handleSteps(e.target.value)}
+              onChange={e => {
+                setLocalSteps(e.target.value);
+                handleSteps(e.target.value); // ← save on every change, not just blur
+              }}
               style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
             />
           </div>
@@ -751,7 +743,7 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
 
 // ─── WeightPanel ──────────────────────────────────────────────────────────────
 function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, dark, pred, desktop }) {
-  const [editingId, setEditingId] = useState(null);   // track by ID, not index
+  const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
   const displayHistory = [...wtHistory].reverse().slice(0, 10);
@@ -768,13 +760,9 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
   async function saveEdit(entry) {
     const v = parseFloat(editValue);
     const entryId = getEntryId(entry);
+    if (!v || v <= 0 || !entryId) { setEditingId(null); return; }
 
-    if (!v || v <= 0 || !entryId) {
-      setEditingId(null);
-      return;
-    }
-
-    setEditingId(null); // close immediately
+    setEditingId(null);
 
     // Optimistic update
     setWtHistory(prev =>
@@ -796,14 +784,12 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
     const entryId = getEntryId(entry);
     if (!entryId) return;
 
-    // Optimistic remove
     setWtHistory(prev => prev.filter(e => getEntryId(e) !== entryId));
 
     try {
       await api.deleteWeight(entryId);
     } catch (err) {
       console.error("Delete weight error:", err);
-      // Revert — re-insert in original position by date
       setWtHistory(prev => {
         const next = [...prev, entry];
         next.sort((a, b) => a.date.localeCompare(b.date));
@@ -844,9 +830,9 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {displayHistory.map((h) => {
               const hId = getEntryId(h);
-              const isEditing = editingId === hId;
+              const isEditing = editingId === String(hId);
               return (
-                <div key={hId || h.date} style={{
+                <div key={String(hId) || h.date} style={{
                   display: "flex", alignItems: "center", gap: 8,
                   padding: "8px 12px",
                   background: isEditing ? "var(--accentBg)" : "var(--surface2)",
@@ -941,6 +927,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const rPro = TARGETS.pro - macros.pro;
   const rFat = TARGETS.fat - macros.fat;
 
+  // ─── Midnight reset ───────────────────────────────────────────────────────
   useEffect(() => {
     function checkMidnightReset() {
       const lastDate = localStorage.getItem("vt_log_date");
@@ -961,6 +948,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     return () => clearInterval(interval);
   }, []);
 
+  // ─── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
     async function loadAll() {
       setLoadingData(true);
@@ -986,6 +974,24 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     loadAll();
   }, []);
 
+  // ─── 30-second poll for cross-device sync ────────────────────────────────
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const log = await api.getLog();
+        setItems(log.items || {});
+        setWholeEggs(log.wholeEggs || 0);
+        setEggWhites(log.eggWhites || 0);
+        setWater(log.water || 0);
+        setSteps(log.steps || "");
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ─── Save helpers ─────────────────────────────────────────────────────────
   function scheduleSave(patch) {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
@@ -1067,7 +1073,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     if (!v) return;
     try {
       const entry = await api.logWeight(v);
-      console.log("logged entry:", entry)
       setWtHistory(prev => [...prev, entry]);
       setWtInput("");
     } catch (err) { console.error("Weight log error:", err); }
@@ -1368,6 +1373,7 @@ export default function App() {
   const [userGoal, setUserGoal] = useState(() => localStorage.getItem("vt_goal") || "lose");
   const [userProfile, setUserProfile] = useState(() => store.get("vt_profile", null));
 
+  // ─── Restore session ────────────────────────────────────────────────────────
   useEffect(() => {
     async function restoreSession() {
       const token = localStorage.getItem("vt_token");
@@ -1383,6 +1389,22 @@ export default function App() {
     }
     restoreSession();
   }, []);
+
+  // ─── Load profile/goals from DB after login (cross-device sync) ────────────
+  useEffect(() => {
+    if (!user) return;
+    api.getProfile().then(data => {
+      if (data && data.targets) {
+        setUserGoal(data.goal);
+        setUserProfile(data.profile);
+        setUserTargets(data.targets);
+        localStorage.setItem("vt_goal", data.goal);
+        store.set("vt_profile", data.profile);
+        store.set("vt_targets", data.targets);
+        setOnboardingDone(true);
+      }
+    }).catch(console.error);
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem("vt_dark", JSON.stringify(dark));
@@ -1466,6 +1488,8 @@ export default function App() {
     store.set("vt_profile", profile);
     store.set("vt_targets", targets);
     setOnboardingDone(true);
+    // Save to DB so other devices pick it up
+    api.saveProfile({ goal, profile, targets }).catch(console.error);
   }
 
   function handleResetGoal() { setOnboardingDone(false); }

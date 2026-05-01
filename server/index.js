@@ -134,6 +134,31 @@ app.put("/api/log", auth, requireDB, async (req, res) => {
   }
 });
 
+// server.js — add after the log routes
+
+app.get("/api/profile", auth, requireDB, async (req, res) => {
+  try {
+    const profile = await db.collection("profiles").findOne({ userId: req.userId });
+    res.json(profile || {});
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+app.put("/api/profile", auth, requireDB, async (req, res) => {
+  try {
+    const { goal, profile, targets } = req.body;
+    await db.collection("profiles").updateOne(
+      { userId: req.userId },
+      { $set: { userId: req.userId, goal, profile, targets, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save profile" });
+  }
+});
+
 // ─── WEIGHT ───────────────────────────────────────────────────────────────────
 app.get("/api/weight", auth, requireDB, async (req, res) => {
   try {

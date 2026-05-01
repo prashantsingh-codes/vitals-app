@@ -28,6 +28,10 @@ export const api = {
   getLog:    (date) => request("GET",  `/api/log${date ? `?date=${date}` : ""}`),
   saveLog:   (data) => request("PUT",  "/api/log", data),
 
+  // Profile/goals
+  getProfile:  ()               => request("GET", "/api/profile"),
+  saveProfile: (data)           => request("PUT", "/api/profile", data),
+
   // Weight
   getWeight:    ()       => request("GET",    "/api/weight"),
   logWeight:    (value)  => request("POST",   "/api/weight", { value }),
