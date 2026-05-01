@@ -3,55 +3,86 @@ import { api } from "./api.js";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const LIGHT = {
-  bg: "#F7F5F0", bg2: "#EEEBE3", bg3: "#E4E0D6",
-  surface: "#FFFFFF", surface2: "#F7F5F0",
-  text: "#1A1814", text2: "#5C5849", text3: "#9A9386",
-  accent: "#D4582A", accent2: "#E8835C", accentBg: "#FBE9E2",
-  border: "#D9D4C7", border2: "#C9C3B3",
-  green: "#2D7A5C", greenBg: "#E6F4EE",
-  amber: "#B8861A", amberBg: "#FBF3E0",
-  blue: "#2563EB", blueBg: "#EFF6FF",
+  bg: "#F7F5F0",
+  bg2: "#EEEBE3",
+  bg3: "#E4E0D6",
+  surface: "#FFFFFF",
+  surface2: "#F7F5F0",
+  text: "#1A1814",
+  text2: "#5C5849",
+  text3: "#9A9386",
+  accent: "#D4582A",
+  accent2: "#E8835C",
+  accentBg: "#FBE9E2",
+  border: "#D9D4C7",
+  border2: "#C9C3B3",
+  green: "#2D7A5C",
+  greenBg: "#E6F4EE",
+  amber: "#B8861A",
+  amberBg: "#FBF3E0",
+  blue: "#2563EB",
+  blueBg: "#EFF6FF",
 };
 const DARK = {
-  bg: "#141210", bg2: "#1C1A17", bg3: "#242119",
-  surface: "#1F1D19", surface2: "#252219",
-  text: "#F0EDE6", text2: "#A89F8E", text3: "#6B6358",
-  accent: "#E8835C", accent2: "#D4582A", accentBg: "#2A1C14",
-  border: "#2E2B24", border2: "#3A362D",
-  green: "#4CAF85", greenBg: "#0F2319",
-  amber: "#D4A435", amberBg: "#221B0A",
-  blue: "#60A5FA", blueBg: "#1E3A5F",
+  bg: "#141210",
+  bg2: "#1C1A17",
+  bg3: "#242119",
+  surface: "#1F1D19",
+  surface2: "#252219",
+  text: "#F0EDE6",
+  text2: "#A89F8E",
+  text3: "#6B6358",
+  accent: "#E8835C",
+  accent2: "#D4582A",
+  accentBg: "#2A1C14",
+  border: "#2E2B24",
+  border2: "#3A362D",
+  green: "#4CAF85",
+  greenBg: "#0F2319",
+  amber: "#D4A435",
+  amberBg: "#221B0A",
+  blue: "#60A5FA",
+  blueBg: "#1E3A5F",
 };
 
 // ─── Macros data ──────────────────────────────────────────────────────────────
 const MACROS = {
-  milk:     { cal: 85,  pro: 6,    fat: 3,   label: "Milk" },
-  oats:     { cal: 111, pro: 3.8,  fat: 2.4, label: "Oats" },
-  whey:     { cal: 140, pro: 25,   fat: 1.8, label: "Whey" },
-  rice:     { cal: 250, pro: 4,    fat: 0.5, label: "Rice" },
-  paneer50: { cal: 102,  pro: 12.5, fat: 4.5, label: "Paneer 50g" },
-  paneer100:{ cal: 203.8,pro: 25,   fat: 9,   label: "Paneer 100g" },
-  dal:      { cal: 300, pro: 15,   fat: 3,   label: "Dal" },
-  soya:     { cal: 175, pro: 25,   fat: 1,   label: "Soya Chunks" },
-  wholeEgg: { cal: 67,  pro: 6,    fat: 5,   label: "Whole Egg" },
-  eggWhite: { cal: 17,  pro: 3.6,  fat: 0,   label: "Egg White" },
+  milk: { cal: 85, pro: 6, fat: 3, label: "Milk" },
+  oats: { cal: 111, pro: 3.8, fat: 2.4, label: "Oats" },
+  whey: { cal: 140, pro: 25, fat: 1.8, label: "Whey" },
+  rice: { cal: 250, pro: 4, fat: 0.5, label: "Rice" },
+  paneer50: { cal: 102, pro: 12.5, fat: 4.5, label: "Paneer 50g" },
+  paneer100: { cal: 203.8, pro: 25, fat: 9, label: "Paneer 100g" },
+  dal: { cal: 300, pro: 15, fat: 3, label: "Dal" },
+  soya: { cal: 175, pro: 25, fat: 1, label: "Soya Chunks" },
+  wholeEgg: { cal: 67, pro: 6, fat: 5, label: "Whole Egg" },
+  eggWhite: { cal: 17, pro: 3.6, fat: 0, label: "Egg White" },
 };
 const FOODS = [
-  { id: "milk1",    key: "milk",      section: "Milk" },
-  { id: "milk2",    key: "milk",      section: "Milk" },
-  { id: "milk3",    key: "milk",      section: "Milk" },
-  { id: "oats",     key: "oats",      section: "Grains & Protein" },
-  { id: "whey",     key: "whey",      section: "Grains & Protein" },
-  { id: "rice",     key: "rice",      section: "Grains & Protein" },
-  { id: "paneer50", key: "paneer50",  section: "Paneer" },
-  { id: "paneer100",key: "paneer100", section: "Paneer" },
-  { id: "dal1",     key: "dal",       section: "Dal" },
-  { id: "dal2",     key: "dal",       section: "Dal" },
-  { id: "soya",     key: "soya",      section: "Soya" },
+  { id: "milk1", key: "milk", section: "Milk" },
+  { id: "milk2", key: "milk", section: "Milk" },
+  { id: "milk3", key: "milk", section: "Milk" },
+  { id: "oats", key: "oats", section: "Grains & Protein" },
+  { id: "whey", key: "whey", section: "Grains & Protein" },
+  { id: "rice", key: "rice", section: "Grains & Protein" },
+  { id: "paneer50", key: "paneer50", section: "Paneer" },
+  { id: "paneer100", key: "paneer100", section: "Paneer" },
+  { id: "dal1", key: "dal", section: "Dal" },
+  { id: "dal2", key: "dal", section: "Dal" },
+  { id: "soya", key: "soya", section: "Soya" },
 ];
 const FOOD_LABEL = (f) =>
-  f.id === "milk1" ? "Milk 1" : f.id === "milk2" ? "Milk 2" : f.id === "milk3" ? "Milk 3" :
-  f.id === "dal1" ? "Dal (bowl 1)" : f.id === "dal2" ? "Dal (bowl 2)" : MACROS[f.key].label;
+  f.id === "milk1"
+    ? "Milk 1"
+    : f.id === "milk2"
+      ? "Milk 2"
+      : f.id === "milk3"
+        ? "Milk 3"
+        : f.id === "dal1"
+          ? "Dal (bowl 1)"
+          : f.id === "dal2"
+            ? "Dal (bowl 2)"
+            : MACROS[f.key].label;
 
 // ─── Motivational quotes ──────────────────────────────────────────────────────
 const MOTIVATIONAL_QUOTES = [
@@ -86,7 +117,13 @@ const HEALTH_TIPS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const store = {
-  get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  get: (k, d) => {
+    try {
+      return JSON.parse(localStorage.getItem(k)) ?? d;
+    } catch {
+      return d;
+    }
+  },
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
@@ -95,14 +132,38 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function calcMacros(items, wholeEggs, eggWhites, customFoods = [], presetFoodList = FOODS) {
-  let cal = 0, pro = 0, fat = 0;
-  presetFoodList.forEach(f => { if (items[f.id]) { cal += MACROS[f.key].cal; pro += MACROS[f.key].pro; fat += MACROS[f.key].fat; } });
+function calcMacros(
+  items,
+  wholeEggs,
+  eggWhites,
+  customFoods = [],
+  presetFoodList = FOODS,
+) {
+  let cal = 0,
+    pro = 0,
+    fat = 0;
+  presetFoodList.forEach((f) => {
+    if (items[f.id]) {
+      cal += MACROS[f.key].cal;
+      pro += MACROS[f.key].pro;
+      fat += MACROS[f.key].fat;
+    }
+  });
   cal += wholeEggs * MACROS.wholeEgg.cal + eggWhites * MACROS.eggWhite.cal;
   pro += wholeEggs * MACROS.wholeEgg.pro + eggWhites * MACROS.eggWhite.pro;
   fat += wholeEggs * MACROS.wholeEgg.fat;
-  customFoods.forEach(f => { if (f.checked) { cal += Number(f.cal)||0; pro += Number(f.pro)||0; fat += Number(f.fat)||0; } });
-  return { cal: Math.round(cal), pro: Math.round(pro * 10) / 10, fat: Math.round(fat * 10) / 10 };
+  customFoods.forEach((f) => {
+    if (f.checked) {
+      cal += Number(f.cal) || 0;
+      pro += Number(f.pro) || 0;
+      fat += Number(f.fat) || 0;
+    }
+  });
+  return {
+    cal: Math.round(cal),
+    pro: Math.round(pro * 10) / 10,
+    fat: Math.round(fat * 10) / 10,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,30 +174,134 @@ function ProgBar({ val, max, color }) {
   const pct = Math.min(100, Math.round((val / max) * 100));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ flex: 1, height: 7, borderRadius: 99, overflow: "hidden", background: "var(--bg3)" }}>
-        <div style={{ width: pct + "%", height: "100%", background: color, borderRadius: 99, transition: "width .5s cubic-bezier(.4,0,.2,1)" }} />
+      <div
+        style={{
+          flex: 1,
+          height: 7,
+          borderRadius: 99,
+          overflow: "hidden",
+          background: "var(--bg3)",
+        }}
+      >
+        <div
+          style={{
+            width: pct + "%",
+            height: "100%",
+            background: color,
+            borderRadius: 99,
+            transition: "width .5s cubic-bezier(.4,0,.2,1)",
+          }}
+        />
       </div>
-      <span style={{ fontSize: 11, color: "var(--text3)", width: 34, textAlign: "right" }}>{pct}%</span>
+      <span
+        style={{
+          fontSize: 11,
+          color: "var(--text3)",
+          width: 34,
+          textAlign: "right",
+        }}
+      >
+        {pct}%
+      </span>
     </div>
   );
 }
 
 function MacroPill({ val, unit, label, rem, color }) {
   return (
-    <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 8px", textAlign: "center" }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color, lineHeight: 1, marginBottom: 2 }}>{val}{unit}</div>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>{rem}</div>
+    <div
+      style={{
+        background: "var(--surface2)",
+        border: "1px solid var(--border)",
+        borderRadius: 12,
+        padding: "12px 8px",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color,
+          lineHeight: 1,
+          marginBottom: 2,
+        }}
+      >
+        {val}
+        {unit}
+      </div>
+      <div
+        style={{
+          fontSize: 10,
+          textTransform: "uppercase",
+          letterSpacing: ".06em",
+          color: "var(--text3)",
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>
+        {rem}
+      </div>
     </div>
   );
 }
 
 function Stepper({ val, onChange, max = 20 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 99, overflow: "hidden" }}>
-      <button onClick={() => onChange(Math.max(0, val - 1))} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", padding: "8px 14px", fontSize: 18, lineHeight: 1, fontFamily: "inherit" }}>−</button>
-      <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", padding: "0 8px", minWidth: 28, textAlign: "center" }}>{val}</span>
-      <button onClick={() => onChange(Math.min(max, val + 1))} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", padding: "8px 14px", fontSize: 18, lineHeight: 1, fontFamily: "inherit" }}>+</button>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        background: "var(--surface2)",
+        border: "1px solid var(--border)",
+        borderRadius: 99,
+        overflow: "hidden",
+      }}
+    >
+      <button
+        onClick={() => onChange(Math.max(0, val - 1))}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--text2)",
+          cursor: "pointer",
+          padding: "8px 14px",
+          fontSize: 18,
+          lineHeight: 1,
+          fontFamily: "inherit",
+        }}
+      >
+        −
+      </button>
+      <span
+        style={{
+          fontSize: 16,
+          fontWeight: 700,
+          color: "var(--text)",
+          padding: "0 8px",
+          minWidth: 28,
+          textAlign: "center",
+        }}
+      >
+        {val}
+      </span>
+      <button
+        onClick={() => onChange(Math.min(max, val + 1))}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--text2)",
+          cursor: "pointer",
+          padding: "8px 14px",
+          fontSize: 18,
+          lineHeight: 1,
+          fontFamily: "inherit",
+        }}
+      >
+        +
+      </button>
     </div>
   );
 }
@@ -144,11 +309,51 @@ function Stepper({ val, onChange, max = 20 }) {
 function Card({ title, icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, marginBottom: 12, boxShadow: "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)", overflow: "hidden" }}>
-      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 18px", cursor: "pointer", userSelect: "none" }}>
+    <div
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 16,
+        marginBottom: 12,
+        boxShadow: "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "16px 18px",
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
         <span style={{ fontSize: 16 }}>{icon}</span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: ".07em" }}>{title}</span>
-        <span style={{ color: "var(--text3)", fontSize: 13, transition: "transform .25s", display: "inline-block", transform: open ? "rotate(180deg)" : "none" }}>▾</span>
+        <span
+          style={{
+            flex: 1,
+            fontSize: 13,
+            fontWeight: 700,
+            color: "var(--text2)",
+            textTransform: "uppercase",
+            letterSpacing: ".07em",
+          }}
+        >
+          {title}
+        </span>
+        <span
+          style={{
+            color: "var(--text3)",
+            fontSize: 13,
+            transition: "transform .25s",
+            display: "inline-block",
+            transform: open ? "rotate(180deg)" : "none",
+          }}
+        >
+          ▾
+        </span>
       </div>
       {open && <div style={{ padding: "0 18px 18px" }}>{children}</div>}
     </div>
@@ -159,23 +364,60 @@ function FoodChip({ food, checked, onToggle }) {
   const m = MACROS[food.key];
   const label = FOOD_LABEL(food);
   return (
-    <div onClick={onToggle} style={{
-      display: "flex", alignItems: "center", gap: 8,
-      background: checked ? "var(--accentBg)" : "var(--surface2)",
-      border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}`,
-      borderRadius: 10, padding: "10px 12px", cursor: "pointer", transition: "all .2s"
-    }}>
-      <div style={{
-        width: 16, height: 16, borderRadius: 5, flexShrink: 0,
-        border: `1.5px solid ${checked ? "var(--accent)" : "var(--border2)"}`,
-        background: checked ? "var(--accent)" : "transparent",
-        display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-        {checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
+    <div
+      onClick={onToggle}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: checked ? "var(--accentBg)" : "var(--surface2)",
+        border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}`,
+        borderRadius: 10,
+        padding: "10px 12px",
+        cursor: "pointer",
+        transition: "all .2s",
+      }}
+    >
+      <div
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: 5,
+          flexShrink: 0,
+          border: `1.5px solid ${checked ? "var(--accent)" : "var(--border2)"}`,
+          background: checked ? "var(--accent)" : "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {checked && (
+          <svg
+            viewBox="0 0 10 8"
+            width="10"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="1,4 4,7 9,1" />
+          </svg>
+        )}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: checked ? "var(--accent)" : "var(--text)" }}>{label}</div>
-        <div style={{ fontSize: 11, color: "var(--text3)" }}>{m.cal}kcal · {m.pro}g P · {m.fat}g F</div>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: checked ? "var(--accent)" : "var(--text)",
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text3)" }}>
+          {m.cal}kcal · {m.pro}g P · {m.fat}g F
+        </div>
       </div>
     </div>
   );
@@ -189,49 +431,240 @@ function AddFoodModal({ onAdd, onClose }) {
   const [error, setError] = useState("");
 
   function submit() {
-    if (!name.trim()) { setError("Please enter a food name"); return; }
-    if (!cal || isNaN(cal) || Number(cal) < 0) { setError("Enter valid calories"); return; }
+    if (!name.trim()) {
+      setError("Please enter a food name");
+      return;
+    }
+    if (!cal || isNaN(cal) || Number(cal) < 0) {
+      setError("Enter valid calories");
+      return;
+    }
     setError("");
-    onAdd({ name: name.trim(), cal: Number(cal), pro: Number(pro) || 0, fat: Number(fat) || 0 });
+    onAdd({
+      name: name.trim(),
+      cal: Number(cal),
+      pro: Number(pro) || 0,
+      fat: Number(fat) || 0,
+    });
     onClose();
   }
 
   const inp = {
-    background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10,
-    padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif",
-    outline: "none", width: "100%", boxSizing: "border-box",
+    background: "var(--surface2)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontSize: 14,
+    color: "var(--text)",
+    fontFamily: "'DM Sans',sans-serif",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>➕ Add Custom Food</div>
-          <button onClick={onClose} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.55)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 20,
+          padding: 28,
+          width: "100%",
+          maxWidth: 400,
+          boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>
+            ➕ Add Custom Food
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "var(--bg2)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              width: 32,
+              height: 32,
+              cursor: "pointer",
+              fontSize: 16,
+              color: "var(--text3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Food Name *</div>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Sprouts salad, Protein bar…" style={inp} autoFocus />
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--text3)",
+                textTransform: "uppercase",
+                letterSpacing: ".06em",
+                marginBottom: 6,
+              }}
+            >
+              Food Name *
+            </div>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Sprouts salad, Protein bar…"
+              style={inp}
+              autoFocus
+            />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 10,
+            }}
+          >
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Calories *</div>
-              <input value={cal} onChange={e => setCal(e.target.value)} placeholder="kcal" type="number" min="0" style={{ ...inp }} />
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--accent)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                  marginBottom: 6,
+                }}
+              >
+                Calories *
+              </div>
+              <input
+                value={cal}
+                onChange={(e) => setCal(e.target.value)}
+                placeholder="kcal"
+                type="number"
+                min="0"
+                style={{ ...inp }}
+              />
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Protein (g)</div>
-              <input value={pro} onChange={e => setPro(e.target.value)} placeholder="g" type="number" min="0" step="0.1" style={{ ...inp }} />
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--green)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                  marginBottom: 6,
+                }}
+              >
+                Protein (g)
+              </div>
+              <input
+                value={pro}
+                onChange={(e) => setPro(e.target.value)}
+                placeholder="g"
+                type="number"
+                min="0"
+                step="0.1"
+                style={{ ...inp }}
+              />
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Fat (g)</div>
-              <input value={fat} onChange={e => setFat(e.target.value)} placeholder="g" type="number" min="0" step="0.1" style={{ ...inp }} />
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--amber)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                  marginBottom: 6,
+                }}
+              >
+                Fat (g)
+              </div>
+              <input
+                value={fat}
+                onChange={(e) => setFat(e.target.value)}
+                placeholder="g"
+                type="number"
+                min="0"
+                step="0.1"
+                style={{ ...inp }}
+              />
             </div>
           </div>
-          {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500, background: "var(--accentBg)", padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
+          {error && (
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--accent)",
+                fontWeight: 500,
+                background: "var(--accentBg)",
+                padding: "8px 12px",
+                borderRadius: 8,
+              }}
+            >
+              {error}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-            <button onClick={onClose} style={{ flex: 1, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--text2)", fontFamily: "inherit" }}>Cancel</button>
-            <button onClick={submit} style={{ flex: 2, background: "var(--accent)", border: "none", borderRadius: 10, padding: "11px 0", fontSize: 14, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "inherit" }}>Add Food</button>
+            <button
+              onClick={onClose}
+              style={{
+                flex: 1,
+                background: "var(--bg2)",
+                border: "1px solid var(--border)",
+                borderRadius: 10,
+                padding: "11px 0",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                color: "var(--text2)",
+                fontFamily: "inherit",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={submit}
+              style={{
+                flex: 2,
+                background: "var(--accent)",
+                border: "none",
+                borderRadius: 10,
+                padding: "11px 0",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                color: "#fff",
+                fontFamily: "inherit",
+              }}
+            >
+              Add Food
+            </button>
           </div>
         </div>
       </div>
@@ -241,25 +674,78 @@ function AddFoodModal({ onAdd, onClose }) {
 
 function CustomFoodChip({ food, onToggle, onDelete }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      background: food.checked ? "var(--accentBg)" : "var(--surface2)",
-      border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`,
-      borderRadius: 10, padding: "10px 12px", transition: "all .2s"
-    }}>
-      <div onClick={onToggle} style={{
-        width: 16, height: 16, borderRadius: 5, flexShrink: 0, cursor: "pointer",
-        border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
-        background: food.checked ? "var(--accent)" : "transparent",
-        display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-        {food.checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: food.checked ? "var(--accentBg)" : "var(--surface2)",
+        border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`,
+        borderRadius: 10,
+        padding: "10px 12px",
+        transition: "all .2s",
+      }}
+    >
+      <div
+        onClick={onToggle}
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: 5,
+          flexShrink: 0,
+          cursor: "pointer",
+          border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
+          background: food.checked ? "var(--accent)" : "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {food.checked && (
+          <svg
+            viewBox="0 0 10 8"
+            width="10"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="1,4 4,7 9,1" />
+          </svg>
+        )}
       </div>
       <div onClick={onToggle} style={{ flex: 1, cursor: "pointer" }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: food.checked ? "var(--accent)" : "var(--text)" }}>{food.name}</div>
-        <div style={{ fontSize: 11, color: "var(--text3)" }}>{food.cal}kcal · {food.pro}g P · {food.fat}g F</div>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: food.checked ? "var(--accent)" : "var(--text)",
+          }}
+        >
+          {food.name}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text3)" }}>
+          {food.cal}kcal · {food.pro}g P · {food.fat}g F
+        </div>
       </div>
-      <button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 16, padding: "2px 4px", lineHeight: 1, borderRadius: 6, transition: "color .15s" }} title="Remove">🗑</button>
+      <button
+        onClick={onDelete}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--text3)",
+          fontSize: 16,
+          padding: "2px 4px",
+          lineHeight: 1,
+          borderRadius: 6,
+          transition: "color .15s",
+        }}
+        title="Remove"
+      >
+        🗑
+      </button>
     </div>
   );
 }
@@ -270,7 +756,10 @@ function WeightChart({ history, dark }) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    if (chartRef.current) {
+      chartRef.current.destroy();
+      chartRef.current = null;
+    }
     if (!history.length || !window.Chart) return;
     const isDark = dark;
     const gridColor = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
@@ -278,28 +767,65 @@ function WeightChart({ history, dark }) {
     chartRef.current = new window.Chart(canvasRef.current.getContext("2d"), {
       type: "line",
       data: {
-        labels: history.map(h => h.date),
-        datasets: [{
-          data: history.map(h => h.value),
-          borderColor: "#D4582A", backgroundColor: "rgba(212,88,42,.08)",
-          borderWidth: 2, pointBackgroundColor: "#D4582A",
-          pointBorderColor: isDark ? "#1F1D19" : "#fff",
-          pointBorderWidth: 2, pointRadius: 5, tension: .4, fill: true
-        }]
+        labels: history.map((h) => h.date),
+        datasets: [
+          {
+            data: history.map((h) => h.value),
+            borderColor: "#D4582A",
+            backgroundColor: "rgba(212,88,42,.08)",
+            borderWidth: 2,
+            pointBackgroundColor: "#D4582A",
+            pointBorderColor: isDark ? "#1F1D19" : "#fff",
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            tension: 0.4,
+            fill: true,
+          },
+        ],
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + "kg" } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => c.parsed.y + "kg" } },
+        },
         scales: {
-          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 } } },
-          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 }, callback: v => v + "kg" } }
-        }
-      }
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: { family: "DM Sans", size: 11 } },
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: {
+              color: textColor,
+              font: { family: "DM Sans", size: 11 },
+              callback: (v) => v + "kg",
+            },
+          },
+        },
+      },
     });
-    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+        chartRef.current = null;
+      }
+    };
   }, [history, dark]);
 
-  if (!history.length) return <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No weight entries yet</div>;
+  if (!history.length)
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          color: "var(--text3)",
+          padding: "20px 0",
+          fontSize: 13,
+        }}
+      >
+        No weight entries yet
+      </div>
+    );
   return <canvas ref={canvasRef} height={160} style={{ width: "100%" }} />;
 }
 
@@ -312,14 +838,25 @@ function AuthPage({ onAuth }) {
   const [loading, setLoading] = useState(false);
 
   async function submit() {
-    if (!email || !password) { setError("Please fill all fields"); return; }
-    if (mode === "signup" && !name) { setError("Please enter your name"); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
-    setError(""); setLoading(true);
+    if (!email || !password) {
+      setError("Please fill all fields");
+      return;
+    }
+    if (mode === "signup" && !name) {
+      setError("Please enter your name");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    setError("");
+    setLoading(true);
     try {
-      const data = mode === "signup"
-        ? await api.signup(name, email, password)
-        : await api.login(email, password);
+      const data =
+        mode === "signup"
+          ? await api.signup(name, email, password)
+          : await api.login(email, password);
       localStorage.setItem("vt_token", data.token);
       onAuth(data.user);
     } catch (err) {
@@ -330,42 +867,156 @@ function AuthPage({ onAuth }) {
   }
 
   const inp = {
-    background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10,
-    padding: "12px 16px", fontSize: 15, color: "var(--text)", fontFamily: "'DM Sans',sans-serif",
-    outline: "none", width: "100%", boxSizing: "border-box",
+    background: "var(--surface2)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    padding: "12px 16px",
+    fontSize: 15,
+    color: "var(--text)",
+    fontFamily: "'DM Sans',sans-serif",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--bg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
       <div style={{ width: "100%", maxWidth: 420 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 38, color: "var(--text)", marginBottom: 4 }}>Vitals</div>
-          <div style={{ fontSize: 13, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".08em" }}>Your daily health companion</div>
+          <div
+            style={{
+              fontFamily: "'DM Serif Display',serif",
+              fontSize: 38,
+              color: "var(--text)",
+              marginBottom: 4,
+            }}
+          >
+            Vitals
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: "var(--text3)",
+              textTransform: "uppercase",
+              letterSpacing: ".08em",
+            }}
+          >
+            Your daily health companion
+          </div>
         </div>
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 28, boxShadow: "0 8px 32px rgba(26,24,20,.12)" }}>
-          <div style={{ display: "flex", gap: 4, background: "var(--bg2)", borderRadius: 10, padding: 4, marginBottom: 24 }}>
-            {["login", "signup"].map(m => (
-              <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
-                flex: 1, padding: "9px 0", borderRadius: 8, border: "none", cursor: "pointer",
-                background: mode === m ? "var(--surface)" : "transparent",
-                color: mode === m ? "var(--text)" : "var(--text3)",
-                fontWeight: 600, fontSize: 14, fontFamily: "inherit",
-                boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,.08)" : "none", transition: "all .2s"
-              }}>{m === "login" ? "Log In" : "Sign Up"}</button>
+        <div
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 20,
+            padding: 28,
+            boxShadow: "0 8px 32px rgba(26,24,20,.12)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              background: "var(--bg2)",
+              borderRadius: 10,
+              padding: 4,
+              marginBottom: 24,
+            }}
+          >
+            {["login", "signup"].map((m) => (
+              <button
+                key={m}
+                onClick={() => {
+                  setMode(m);
+                  setError("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  background: mode === m ? "var(--surface)" : "transparent",
+                  color: mode === m ? "var(--text)" : "var(--text3)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  fontFamily: "inherit",
+                  boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,.08)" : "none",
+                  transition: "all .2s",
+                }}
+              >
+                {m === "login" ? "Log In" : "Sign Up"}
+              </button>
             ))}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mode === "signup" && (
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                style={inp}
+              />
             )}
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={inp} />
-            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" style={inp} onKeyDown={e => e.key === "Enter" && submit()} />
-            {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>{error}</div>}
-            <button onClick={submit} disabled={loading} style={{
-              background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10,
-              padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
-              transition: "all .2s", marginTop: 4, opacity: loading ? 0.7 : 1
-            }}>{loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}</button>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              type="email"
+              style={inp}
+            />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              type="password"
+              style={inp}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+            />
+            {error && (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--accent)",
+                  fontWeight: 500,
+                }}
+              >
+                {error}
+              </div>
+            )}
+            <button
+              onClick={submit}
+              disabled={loading}
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                padding: "13px 0",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: loading ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                transition: "all .2s",
+                marginTop: 4,
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading
+                ? "Please wait…"
+                : mode === "login"
+                  ? "Log In"
+                  : "Create Account"}
+            </button>
           </div>
         </div>
       </div>
@@ -374,13 +1025,24 @@ function AuthPage({ onAuth }) {
 }
 
 // ─── Mifflin-St Jeor Calculator ───────────────────────────────────────────────
-function calcMifflin({ weight, height, age, gender, activity, goal, steps = "5000" }) {
-  const w = parseFloat(weight), h = parseFloat(height), a = parseFloat(age);
+function calcMifflin({
+  weight,
+  height,
+  age,
+  gender,
+  activity,
+  goal,
+  steps = "5000",
+}) {
+  const w = parseFloat(weight),
+    h = parseFloat(height),
+    a = parseFloat(age);
   const actMultiplier = parseFloat(activity.replace("-none", ""));
-  const bmr = gender === "male"
-    ? 10 * w + 6.25 * h - 5 * a + 5
-    : 10 * w + 6.25 * h - 5 * a - 161;
-  const stepsBonus = ({ "2000": 0, "5000": 50, "8000": 100, "10000": 150 })[steps] ?? 0;
+  const bmr =
+    gender === "male"
+      ? 10 * w + 6.25 * h - 5 * a + 5
+      : 10 * w + 6.25 * h - 5 * a - 161;
+  const stepsBonus = { 2000: 0, 5000: 50, 8000: 100, 10000: 150 }[steps] ?? 0;
   const tdee = Math.round(bmr * actMultiplier * 0.81) + stepsBonus;
   let cal, pro, fat;
   if (goal === "lose") {
@@ -400,23 +1062,50 @@ function OnboardingPage({ onComplete, dark, setDark }) {
   const [step, setStep] = useState(0);
   const [goal, setGoal] = useState("");
   const [form, setForm] = useState({
-    age: "", gender: "male", weight: "", height: "",
-    activity: "1.55", training: "balanced", targetWeight: "", steps: "5000"
+    age: "",
+    gender: "male",
+    weight: "",
+    height: "",
+    activity: "1.55",
+    training: "balanced",
+    targetWeight: "",
+    steps: "5000",
   });
   const [calculated, setCalculated] = useState(null);
-  const [manualTargets, setManualTargets] = useState({ cal: 0, pro: 0, fat: 0 });
+  const [manualTargets, setManualTargets] = useState({
+    cal: 0,
+    pro: 0,
+    fat: 0,
+  });
   const [error, setError] = useState("");
 
-  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setF = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const inp = { background: "var(--surface2)", border: "1px solid var(--border2)", borderRadius: 10, padding: "11px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none", width: "100%", boxSizing: "border-box" };
+  const inp = {
+    background: "var(--surface2)",
+    border: "1px solid var(--border2)",
+    borderRadius: 10,
+    padding: "11px 14px",
+    fontSize: 14,
+    color: "var(--text)",
+    fontFamily: "'DM Sans',sans-serif",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  };
   const sel = { ...inp, cursor: "pointer" };
 
   function nextStep() {
     setError("");
-    if (step === 0 && !goal) { setError("Please select a goal"); return; }
+    if (step === 0 && !goal) {
+      setError("Please select a goal");
+      return;
+    }
     if (step === 1) {
-      if (!form.age || !form.weight || !form.height) { setError("Please fill all fields"); return; }
+      if (!form.age || !form.weight || !form.height) {
+        setError("Please fill all fields");
+        return;
+      }
     }
     if (step === 2) {
       if (form.targetWeight) {
@@ -424,11 +1113,15 @@ function OnboardingPage({ onComplete, dark, setDark }) {
         const target = parseFloat(form.targetWeight);
         if (!isNaN(current) && !isNaN(target)) {
           if (goal === "lose" && target >= current) {
-            setError(`For fat loss your target weight must be less than your current weight (${current} kg). Please enter a value below ${current} kg.`);
+            setError(
+              `For fat loss your target weight must be less than your current weight (${current} kg). Please enter a value below ${current} kg.`,
+            );
             return;
           }
           if (goal === "gain" && target <= current) {
-            setError(`For muscle gain your target weight must be greater than your current weight (${current} kg). Please enter a value above ${current} kg.`);
+            setError(
+              `For muscle gain your target weight must be greater than your current weight (${current} kg). Please enter a value above ${current} kg.`,
+            );
             return;
           }
         }
@@ -439,16 +1132,55 @@ function OnboardingPage({ onComplete, dark, setDark }) {
       setStep(3);
       return;
     }
-    if (step < 2) setStep(s => s + 1);
+    if (step < 2) setStep((s) => s + 1);
   }
 
   function confirm() {
-    onComplete({ goal, profile: form, targets: { cal: Number(manualTargets.cal), pro: Number(manualTargets.pro), fat: Number(manualTargets.fat) } });
+    onComplete({
+      goal,
+      profile: form,
+      targets: {
+        cal: Number(manualTargets.cal),
+        pro: Number(manualTargets.pro),
+        fat: Number(manualTargets.fat),
+      },
+    });
   }
 
-  const cardStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 420, boxShadow: "0 8px 32px rgba(26,24,20,.12)" };
-  const nextBtn = { width: "100%", background: "var(--accent)", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#fff", fontFamily: "'DM Sans',sans-serif", marginTop: 18, transition: "all .2s" };
-  const backBtn = { background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", marginTop: 10, width: "100%", textAlign: "center" };
+  const cardStyle = {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 20,
+    padding: 28,
+    width: "100%",
+    maxWidth: 420,
+    boxShadow: "0 8px 32px rgba(26,24,20,.12)",
+  };
+  const nextBtn = {
+    width: "100%",
+    background: "var(--accent)",
+    border: "none",
+    borderRadius: 10,
+    padding: "13px 0",
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    color: "#fff",
+    fontFamily: "'DM Sans',sans-serif",
+    marginTop: 18,
+    transition: "all .2s",
+  };
+  const backBtn = {
+    background: "none",
+    border: "none",
+    color: "var(--text3)",
+    cursor: "pointer",
+    fontSize: 13,
+    fontFamily: "'DM Sans',sans-serif",
+    marginTop: 10,
+    width: "100%",
+    textAlign: "center",
+  };
 
   const targetWeightHint = () => {
     if (!form.weight) return null;
@@ -460,36 +1192,132 @@ function OnboardingPage({ onComplete, dark, setDark }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--bg)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, color: "var(--text)" }}>Vitals</div>
-        <div style={{ fontSize: 12, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 4 }}>Your nutrition companion</div>
+        <div
+          style={{
+            fontFamily: "'DM Serif Display',serif",
+            fontSize: 36,
+            color: "var(--text)",
+          }}
+        >
+          Vitals
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--text3)",
+            textTransform: "uppercase",
+            letterSpacing: ".08em",
+            marginTop: 4,
+          }}
+        >
+          Your nutrition companion
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-        {[0,1,2,3].map(i => (
-          <div key={i} style={{ height: 6, borderRadius: 99, background: step === i ? "var(--accent)" : "var(--border2)", width: step === i ? 22 : 6, transition: "all .3s" }} />
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              height: 6,
+              borderRadius: 99,
+              background: step === i ? "var(--accent)" : "var(--border2)",
+              width: step === i ? 22 : 6,
+              transition: "all .3s",
+            }}
+          />
         ))}
       </div>
 
       <div style={cardStyle}>
         {step === 0 && (
           <>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>What's your goal?</div>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 22, lineHeight: 1.6 }}>We'll use this to calculate your ideal calorie and macro targets.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div
+              style={{
+                fontFamily: "'DM Serif Display',serif",
+                fontSize: 22,
+                color: "var(--text)",
+                marginBottom: 6,
+              }}
+            >
+              What's your goal?
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text2)",
+                marginBottom: 22,
+                lineHeight: 1.6,
+              }}
+            >
+              We'll use this to calculate your ideal calorie and macro targets.
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 10,
+              }}
+            >
               {[
-                { id: "lose", icon: "🔥", label: "Lose Fat", sub: "Caloric deficit" },
-                { id: "gain", icon: "💪", label: "Gain Muscle", sub: "Caloric surplus" },
-              ].map(g => (
-                <div key={g.id} onClick={() => setGoal(g.id)} style={{
-                  border: `1.5px solid ${goal === g.id ? "var(--accent)" : "var(--border2)"}`,
-                  background: goal === g.id ? "var(--accentBg)" : "var(--surface2)",
-                  borderRadius: 12, padding: "18px 14px", cursor: "pointer", textAlign: "center", transition: "all .2s"
-                }}>
+                {
+                  id: "lose",
+                  icon: "🔥",
+                  label: "Lose Fat",
+                  sub: "Caloric deficit",
+                },
+                {
+                  id: "gain",
+                  icon: "💪",
+                  label: "Gain Muscle",
+                  sub: "Caloric surplus",
+                },
+              ].map((g) => (
+                <div
+                  key={g.id}
+                  onClick={() => setGoal(g.id)}
+                  style={{
+                    border: `1.5px solid ${goal === g.id ? "var(--accent)" : "var(--border2)"}`,
+                    background:
+                      goal === g.id ? "var(--accentBg)" : "var(--surface2)",
+                    borderRadius: 12,
+                    padding: "18px 14px",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    transition: "all .2s",
+                  }}
+                >
                   <div style={{ fontSize: 28, marginBottom: 6 }}>{g.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: goal === g.id ? "var(--accent)" : "var(--text)" }}>{g.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{g.sub}</div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: goal === g.id ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {g.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text3)",
+                      marginTop: 2,
+                    }}
+                  >
+                    {g.sub}
+                  </div>
                 </div>
               ))}
             </div>
@@ -498,22 +1326,89 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 
         {step === 1 && (
           <>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>About you</div>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20, lineHeight: 1.6 }}>Used to estimate your base metabolic rate (BMR) via Mifflin-St Jeor.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div
+              style={{
+                fontFamily: "'DM Serif Display',serif",
+                fontSize: 22,
+                color: "var(--text)",
+                marginBottom: 6,
+              }}
+            >
+              About you
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text2)",
+                marginBottom: 20,
+                lineHeight: 1.6,
+              }}
+            >
+              Used to estimate your base metabolic rate (BMR) via Mifflin-St
+              Jeor.
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
+              }}
+            >
               {[
                 { label: "Age", key: "age", placeholder: "25", type: "number" },
-                { label: "Weight (kg)", key: "weight", placeholder: "75", type: "number" },
-                { label: "Height (cm)", key: "height", placeholder: "175", type: "number" },
-              ].map(f => (
+                {
+                  label: "Weight (kg)",
+                  key: "weight",
+                  placeholder: "75",
+                  type: "number",
+                },
+                {
+                  label: "Height (cm)",
+                  key: "height",
+                  placeholder: "175",
+                  type: "number",
+                },
+              ].map((f) => (
                 <div key={f.key}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>{f.label}</div>
-                  <input type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => setF(f.key, e.target.value)} style={inp} />
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--text3)",
+                      textTransform: "uppercase",
+                      letterSpacing: ".06em",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {f.label}
+                  </div>
+                  <input
+                    type={f.type}
+                    placeholder={f.placeholder}
+                    value={form[f.key]}
+                    onChange={(e) => setF(f.key, e.target.value)}
+                    style={inp}
+                  />
                 </div>
               ))}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Gender</div>
-                <select value={form.gender} onChange={e => setF("gender", e.target.value)} style={sel}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text3)",
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Gender
+                </div>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setF("gender", e.target.value)}
+                  style={sel}
+                >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
@@ -524,33 +1419,90 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 
         {step === 2 && (
           <>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your activity level</div>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20, lineHeight: 1.6 }}>Helps us calculate your TDEE (Total Daily Energy Expenditure).</div>
+            <div
+              style={{
+                fontFamily: "'DM Serif Display',serif",
+                fontSize: 22,
+                color: "var(--text)",
+                marginBottom: 6,
+              }}
+            >
+              Your activity level
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text2)",
+                marginBottom: 20,
+                lineHeight: 1.6,
+              }}
+            >
+              Helps us calculate your TDEE (Total Daily Energy Expenditure).
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Exercise days per week</div>
-                <select value={form.activity} onChange={e => {
-                  setF("activity", e.target.value);
-                  if (e.target.value === "1.2-none") setF("training", "none");
-                }} style={sel}>
-                  <option value="1.2-none">No exercise (completely sedentary)</option>
-                  <option value="1.2">Sedentary (desk job, light walking)</option>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text3)",
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Exercise days per week
+                </div>
+                <select
+                  value={form.activity}
+                  onChange={(e) => {
+                    setF("activity", e.target.value);
+                    if (e.target.value === "1.2-none") setF("training", "none");
+                  }}
+                  style={sel}
+                >
+                  <option value="1.2-none">
+                    No exercise (completely sedentary)
+                  </option>
+                  <option value="1.2">
+                    Sedentary (desk job, light walking)
+                  </option>
                   <option value="1.375">Lightly active (1–2 days/week)</option>
-                  <option value="1.55">Moderately active (3–4 days/week)</option>
+                  <option value="1.55">
+                    Moderately active (3–4 days/week)
+                  </option>
                   <option value="1.725">Very active (5–6 days/week)</option>
                   <option value="1.9">Athlete (daily intense training)</option>
                 </select>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Primary training type</div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text3)",
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Primary training type
+                </div>
                 <select
                   value={form.training}
-                  onChange={e => setF("training", e.target.value)}
+                  onChange={(e) => setF("training", e.target.value)}
                   disabled={form.activity === "1.2-none"}
-                  style={{ ...sel, opacity: form.activity === "1.2-none" ? 0.4 : 1, cursor: form.activity === "1.2-none" ? "not-allowed" : "pointer" }}
+                  style={{
+                    ...sel,
+                    opacity: form.activity === "1.2-none" ? 0.4 : 1,
+                    cursor:
+                      form.activity === "1.2-none" ? "not-allowed" : "pointer",
+                  }}
                 >
-                  {form.activity === "1.2-none" && <option value="none">None</option>}
+                  {form.activity === "1.2-none" && (
+                    <option value="none">None</option>
+                  )}
                   <option value="balanced">Balanced (cardio + strength)</option>
                   <option value="strength">Strength / Weight training</option>
                   <option value="cardio">Cardio dominant</option>
@@ -558,22 +1510,62 @@ function OnboardingPage({ onComplete, dark, setDark }) {
               </div>
 
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Daily Steps (average)</div>
-                <select value={form.steps} onChange={e => setF("steps", e.target.value)} style={sel}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text3)",
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Daily Steps (average)
+                </div>
+                <select
+                  value={form.steps}
+                  onChange={(e) => setF("steps", e.target.value)}
+                  style={sel}
+                >
                   <option value="2000">Under 3,000 (barely moving)</option>
-                  <option value="5000">3,000–6,000 (light daily movement)</option>
+                  <option value="5000">
+                    3,000–6,000 (light daily movement)
+                  </option>
                   <option value="8000">6,000–9,000 (moderately active)</option>
                   <option value="10000">10,000+ (very active daily)</option>
                 </select>
               </div>
 
               <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>
-                    {goal === "lose" ? "Target weight (kg)" : "Goal weight to reach (kg)"}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--text3)",
+                      textTransform: "uppercase",
+                      letterSpacing: ".06em",
+                    }}
+                  >
+                    {goal === "lose"
+                      ? "Target weight (kg)"
+                      : "Goal weight to reach (kg)"}
                   </div>
                   {targetWeightHint() && (
-                    <div style={{ fontSize: 11, color: goal === "lose" ? "var(--blue)" : "var(--green)", fontWeight: 600 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: goal === "lose" ? "var(--blue)" : "var(--green)",
+                        fontWeight: 600,
+                      }}
+                    >
                       {targetWeightHint()}
                     </div>
                   )}
@@ -583,28 +1575,70 @@ function OnboardingPage({ onComplete, dark, setDark }) {
                   placeholder={goal === "lose" ? "e.g. 68" : "e.g. 80"}
                   step="0.1"
                   value={form.targetWeight}
-                  onChange={e => { setF("targetWeight", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    setF("targetWeight", e.target.value);
+                    setError("");
+                  }}
                   style={{
                     ...inp,
                     border: (() => {
-                      if (!form.targetWeight || !form.weight) return "1px solid var(--border2)";
-                      const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
-                      if (isNaN(cur) || isNaN(tgt)) return "1px solid var(--border2)";
-                      if (goal === "lose" && tgt >= cur) return "1.5px solid var(--accent)";
-                      if (goal === "gain" && tgt <= cur) return "1.5px solid var(--accent)";
+                      if (!form.targetWeight || !form.weight)
+                        return "1px solid var(--border2)";
+                      const cur = parseFloat(form.weight),
+                        tgt = parseFloat(form.targetWeight);
+                      if (isNaN(cur) || isNaN(tgt))
+                        return "1px solid var(--border2)";
+                      if (goal === "lose" && tgt >= cur)
+                        return "1.5px solid var(--accent)";
+                      if (goal === "gain" && tgt <= cur)
+                        return "1.5px solid var(--accent)";
                       return "1.5px solid var(--green)";
-                    })()
+                    })(),
                   }}
                 />
                 {(() => {
                   if (!form.targetWeight || !form.weight) return null;
-                  const cur = parseFloat(form.weight), tgt = parseFloat(form.targetWeight);
+                  const cur = parseFloat(form.weight),
+                    tgt = parseFloat(form.targetWeight);
                   if (isNaN(cur) || isNaN(tgt)) return null;
                   if (goal === "lose" && tgt >= cur)
-                    return <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 5, fontWeight: 600 }}>⚠ Target must be below {cur} kg for fat loss</div>;
+                    return (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--accent)",
+                          marginTop: 5,
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ Target must be below {cur} kg for fat loss
+                      </div>
+                    );
                   if (goal === "gain" && tgt <= cur)
-                    return <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 5, fontWeight: 600 }}>⚠ Target must be above {cur} kg for muscle gain</div>;
-                  return <div style={{ fontSize: 11, color: "var(--green)", marginTop: 5, fontWeight: 600 }}>✓ Looks good!</div>;
+                    return (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--accent)",
+                          marginTop: 5,
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ Target must be above {cur} kg for muscle gain
+                      </div>
+                    );
+                  return (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--green)",
+                        marginTop: 5,
+                        fontWeight: 600,
+                      }}
+                    >
+                      ✓ Looks good!
+                    </div>
+                  );
                 })()}
               </div>
             </div>
@@ -613,48 +1647,187 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 
         {step === 3 && calculated && (
           <>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "var(--text)", marginBottom: 6 }}>Your targets</div>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>Calculated via Mifflin-St Jeor formula — edit any value if you prefer different targets.</div>
+            <div
+              style={{
+                fontFamily: "'DM Serif Display',serif",
+                fontSize: 22,
+                color: "var(--text)",
+                marginBottom: 6,
+              }}
+            >
+              Your targets
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text2)",
+                marginBottom: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              Calculated via Mifflin-St Jeor formula — edit any value if you
+              prefer different targets.
+            </div>
 
-            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--text2)", lineHeight: 2 }}>
-              <span style={{ fontWeight: 700, color: "var(--text)" }}>BMR:</span> {calculated.bmr} kcal &nbsp;·&nbsp;
-              <span style={{ fontWeight: 700, color: "var(--text)" }}>TDEE:</span> {calculated.tdee} kcal<br />
-              <span style={{ fontWeight: 700, color: "var(--text)" }}>{goal === "lose" ? "Deficit" : "Surplus"}:</span> {Math.abs(calculated.tdee - calculated.cal)} kcal/day &nbsp;·&nbsp;
-              <span style={{ fontWeight: 700, color: goal === "lose" ? "var(--green)" : "var(--accent)" }}>
-                ~{Math.abs(((calculated.tdee - calculated.cal) * 7) / 7700).toFixed(2)} kg/week {goal === "lose" ? "loss" : "gain"}
+            <div
+              style={{
+                background: "var(--surface2)",
+                border: "1px solid var(--border)",
+                borderRadius: 10,
+                padding: "12px 14px",
+                marginBottom: 16,
+                fontSize: 13,
+                color: "var(--text2)",
+                lineHeight: 2,
+              }}
+            >
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>
+                BMR:
+              </span>{" "}
+              {calculated.bmr} kcal &nbsp;·&nbsp;
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>
+                TDEE:
+              </span>{" "}
+              {calculated.tdee} kcal
+              <br />
+              <span style={{ fontWeight: 700, color: "var(--text)" }}>
+                {goal === "lose" ? "Deficit" : "Surplus"}:
+              </span>{" "}
+              {Math.abs(calculated.tdee - calculated.cal)} kcal/day
+              &nbsp;·&nbsp;
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: goal === "lose" ? "var(--green)" : "var(--accent)",
+                }}
+              >
+                ~
+                {Math.abs(
+                  ((calculated.tdee - calculated.cal) * 7) / 7700,
+                ).toFixed(2)}{" "}
+                kg/week {goal === "lose" ? "loss" : "gain"}
               </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 10,
+                marginBottom: 8,
+              }}
+            >
               {[
                 { key: "cal", label: "kcal / day", color: "var(--accent)" },
                 { key: "pro", label: "Protein (g)", color: "var(--green)" },
                 { key: "fat", label: "Fat (g)", color: "var(--amber)" },
-              ].map(f => (
-                <div key={f.key} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 8px", textAlign: "center" }}>
+              ].map((f) => (
+                <div
+                  key={f.key}
+                  style={{
+                    background: "var(--surface2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    padding: "12px 8px",
+                    textAlign: "center",
+                  }}
+                >
                   <input
                     type="number"
                     value={manualTargets[f.key]}
-                    onChange={e => setManualTargets(t => ({ ...t, [f.key]: e.target.value }))}
-                    style={{ background: "none", border: "none", fontSize: 22, fontWeight: 700, color: f.color, textAlign: "center", width: "100%", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+                    onChange={(e) =>
+                      setManualTargets((t) => ({
+                        ...t,
+                        [f.key]: e.target.value,
+                      }))
+                    }
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: f.color,
+                      textAlign: "center",
+                      width: "100%",
+                      fontFamily: "'DM Sans',sans-serif",
+                      outline: "none",
+                    }}
                   />
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", fontWeight: 600 }}>{f.label}</div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      textTransform: "uppercase",
+                      letterSpacing: ".06em",
+                      color: "var(--text3)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {f.label}
+                  </div>
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", marginBottom: 4 }}>Tap any number above to edit manually</div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--text3)",
+                textAlign: "center",
+                marginBottom: 4,
+              }}
+            >
+              Tap any number above to edit manually
+            </div>
           </>
         )}
 
-        {error && <div style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, background: "var(--accentBg)", padding: "8px 12px", borderRadius: 8, marginTop: 12 }}>{error}</div>}
+        {error && (
+          <div
+            style={{
+              fontSize: 13,
+              color: "var(--accent)",
+              fontWeight: 600,
+              background: "var(--accentBg)",
+              padding: "8px 12px",
+              borderRadius: 8,
+              marginTop: 12,
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <button onClick={step === 3 ? confirm : nextStep} style={nextBtn}>
-          {step === 2 ? "Calculate my targets →" : step === 3 ? "Start tracking →" : "Continue →"}
+          {step === 2
+            ? "Calculate my targets →"
+            : step === 3
+              ? "Start tracking →"
+              : "Continue →"}
         </button>
-        {step > 0 && <button onClick={() => { setError(""); setStep(s => s - 1); }} style={backBtn}>← Back</button>}
+        {step > 0 && (
+          <button
+            onClick={() => {
+              setError("");
+              setStep((s) => s - 1);
+            }}
+            style={backBtn}
+          >
+            ← Back
+          </button>
+        )}
       </div>
 
-      <button onClick={() => setDark(d => !d)} style={{ marginTop: 20, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text3)", fontFamily: "'DM Sans',sans-serif" }}>
+      <button
+        onClick={() => setDark((d) => !d)}
+        style={{
+          marginTop: 20,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 13,
+          color: "var(--text3)",
+          fontFamily: "'DM Sans',sans-serif",
+        }}
+      >
         {dark ? "☀️ Switch to Light" : "🌙 Switch to Dark"}
       </button>
     </div>
@@ -662,33 +1835,100 @@ function OnboardingPage({ onComplete, dark, setDark }) {
 }
 
 // ─── HealthPanel ─────────────────────────────────────────────────────────────
-function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile }) {
+function HealthPanel({
+  desktop,
+  water,
+  handleWater,
+  wtHistory,
+  tipIdx,
+  steps,
+  handleSteps,
+  userProfile,
+}) {
   const [localSteps, setLocalSteps] = useState(steps);
-  useEffect(() => { setLocalSteps(steps); }, [steps]);
+  useEffect(() => {
+    setLocalSteps(steps);
+  }, [steps]);
 
   const heightCm = parseFloat(userProfile?.height);
-  const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
-  const bmi = (heightCm > 0 && latestWeight)
-    ? (latestWeight / ((heightCm / 100) ** 2)).toFixed(1)
-    : null;
+  const latestWeight =
+    wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
+  const bmi =
+    heightCm > 0 && latestWeight
+      ? (latestWeight / (heightCm / 100) ** 2).toFixed(1)
+      : null;
 
   return (
-    <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+    <div
+      style={{
+        display: desktop ? "grid" : "block",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 16,
+        alignItems: "start",
+      }}
+    >
       <div>
         <Card title="Today's Tip" icon="✨">
-          <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 12, padding: "16px", fontSize: 14, color: "var(--accent)", fontWeight: 600, lineHeight: 1.6 }}>
+          <div
+            style={{
+              background: "var(--accentBg)",
+              border: "1px solid var(--accent)",
+              borderRadius: 12,
+              padding: "16px",
+              fontSize: 14,
+              color: "var(--accent)",
+              fontWeight: 600,
+              lineHeight: 1.6,
+            }}
+          >
             {HEALTH_TIPS[tipIdx]}
           </div>
         </Card>
         <Card title="Hydration Tracker" icon="💧">
           <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue, #2563EB)" }}>{water}</div>
-            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today (goal: 15)</div>
+            <div
+              style={{
+                fontSize: 40,
+                fontWeight: 800,
+                color: "var(--blue, #2563EB)",
+              }}
+            >
+              {water}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>
+              glasses today (goal: 15)
+            </div>
             <ProgBar val={water} max={15} color="#2563EB" />
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <button onClick={() => handleWater(Math.max(0, water - 1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
-            <button onClick={() => handleWater(Math.min(25, water + 1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
+            <button
+              onClick={() => handleWater(Math.max(0, water - 1))}
+              style={{
+                background: "var(--surface2)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "8px 20px",
+                cursor: "pointer",
+                fontSize: 18,
+                color: "var(--text)",
+              }}
+            >
+              −
+            </button>
+            <button
+              onClick={() => handleWater(Math.min(25, water + 1))}
+              style={{
+                background: "#2563EB",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 20px",
+                cursor: "pointer",
+                fontSize: 18,
+                color: "#fff",
+              }}
+            >
+              + Glass
+            </button>
           </div>
         </Card>
       </div>
@@ -696,11 +1936,34 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
         {bmi !== null && (
           <Card title="BMI Estimate" icon="📊">
             <div style={{ textAlign: "center", padding: "8px 0" }}>
-              <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue, #2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
-              <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
-                {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: 800,
+                  color:
+                    parseFloat(bmi) < 18.5
+                      ? "var(--blue, #2563EB)"
+                      : parseFloat(bmi) < 25
+                        ? "var(--green)"
+                        : "var(--amber)",
+                }}
+              >
+                {bmi}
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>
+              <div
+                style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}
+              >
+                {parseFloat(bmi) < 18.5
+                  ? "Underweight"
+                  : parseFloat(bmi) < 25
+                    ? "Normal weight ✓"
+                    : parseFloat(bmi) < 30
+                      ? "Overweight"
+                      : "Obese"}
+              </div>
+              <div
+                style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}
+              >
                 Based on latest weight · {heightCm}cm height
               </div>
             </div>
@@ -712,20 +1975,40 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
               type="number"
               value={localSteps}
               placeholder="Enter steps today"
-              onChange={e => {
+              onChange={(e) => {
                 setLocalSteps(e.target.value);
                 handleSteps(e.target.value); // ← save on every change, not just blur
               }}
-              style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+              style={{
+                flex: 1,
+                background: "var(--surface2)",
+                border: "1px solid var(--border)",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "var(--text)",
+                fontFamily: "'DM Sans',sans-serif",
+                outline: "none",
+              }}
             />
           </div>
           {localSteps > 0 && (
             <div>
-              <ProgBar val={parseInt(localSteps)} max={10000} color="var(--green)" />
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>
-                {parseInt(localSteps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}
+              <ProgBar
+                val={parseInt(localSteps)}
+                max={10000}
+                color="var(--green)"
+              />
+              <div
+                style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}
+              >
+                {parseInt(localSteps) >= 10000
+                  ? "🎉 Goal of 10,000 steps reached!"
+                  : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}
               </div>
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
+              <div
+                style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}
+              >
                 ≈ {Math.round(parseInt(localSteps) * 0.04)} kcal burned
               </div>
             </div>
@@ -733,7 +2016,20 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
         </Card>
         <Card title="All Health Tips" icon="📋" defaultOpen={false}>
           {HEALTH_TIPS.map((tip, i) => (
-            <div key={i} style={{ fontSize: 13, color: "var(--text2)", padding: "8px 0", borderBottom: i < HEALTH_TIPS.length - 1 ? "1px solid var(--border)" : "none" }}>{tip}</div>
+            <div
+              key={i}
+              style={{
+                fontSize: 13,
+                color: "var(--text2)",
+                padding: "8px 0",
+                borderBottom:
+                  i < HEALTH_TIPS.length - 1
+                    ? "1px solid var(--border)"
+                    : "none",
+              }}
+            >
+              {tip}
+            </div>
           ))}
         </Card>
       </div>
@@ -742,7 +2038,16 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
 }
 
 // ─── WeightPanel ──────────────────────────────────────────────────────────────
-function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, dark, pred, desktop }) {
+function WeightPanel({
+  wtInput,
+  setWtInput,
+  logWeight,
+  wtHistory,
+  setWtHistory,
+  dark,
+  pred,
+  desktop,
+}) {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
@@ -760,13 +2065,16 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
   async function saveEdit(entry) {
     const v = parseFloat(editValue);
     const entryId = getEntryId(entry);
-    if (!v || v <= 0 || !entryId) { setEditingId(null); return; }
+    if (!v || v <= 0 || !entryId) {
+      setEditingId(null);
+      return;
+    }
 
     setEditingId(null);
 
     // Optimistic update
-    setWtHistory(prev =>
-      prev.map(e => getEntryId(e) === entryId ? { ...e, value: v } : e)
+    setWtHistory((prev) =>
+      prev.map((e) => (getEntryId(e) === entryId ? { ...e, value: v } : e)),
     );
 
     try {
@@ -774,8 +2082,10 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
     } catch (err) {
       console.error("Update weight error:", err);
       // Revert
-      setWtHistory(prev =>
-        prev.map(e => getEntryId(e) === entryId ? { ...e, value: entry.value } : e)
+      setWtHistory((prev) =>
+        prev.map((e) =>
+          getEntryId(e) === entryId ? { ...e, value: entry.value } : e,
+        ),
       );
     }
   }
@@ -784,13 +2094,13 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
     const entryId = getEntryId(entry);
     if (!entryId) return;
 
-    setWtHistory(prev => prev.filter(e => getEntryId(e) !== entryId));
+    setWtHistory((prev) => prev.filter((e) => getEntryId(e) !== entryId));
 
     try {
       await api.deleteWeight(entryId);
     } catch (err) {
       console.error("Delete weight error:", err);
-      setWtHistory(prev => {
+      setWtHistory((prev) => {
         const next = [...prev, entry];
         next.sort((a, b) => a.date.localeCompare(b.date));
         return next;
@@ -801,46 +2111,120 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
   }
 
   return (
-    <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+    <div
+      style={{
+        display: desktop ? "grid" : "block",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 16,
+        alignItems: "start",
+      }}
+    >
       <Card title="Log Weight" icon="⚖️">
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <input
             value={wtInput}
-            onChange={e => setWtInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && logWeight()}
+            onChange={(e) => setWtInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && logWeight()}
             placeholder="Weight in kg"
             type="number"
             step="0.1"
-            style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+            style={{
+              flex: 1,
+              background: "var(--surface2)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 15,
+              color: "var(--text)",
+              fontFamily: "'DM Sans',sans-serif",
+              outline: "none",
+            }}
           />
-          <button onClick={logWeight} style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Log</button>
+          <button
+            onClick={logWeight}
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              padding: "10px 20px",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Log
+          </button>
         </div>
         <WeightChart history={wtHistory} dark={dark} />
         {pred && (
-          <div style={{ background: "var(--greenBg)", border: "1px solid var(--green)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--green)", fontWeight: 600, marginTop: 10, display: "flex", alignItems: "center", gap: 7 }}>
-            <span>🎯</span><span>{pred}</span>
+          <div
+            style={{
+              background: "var(--greenBg)",
+              border: "1px solid var(--green)",
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "var(--green)",
+              fontWeight: 600,
+              marginTop: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+            }}
+          >
+            <span>🎯</span>
+            <span>{pred}</span>
           </div>
         )}
       </Card>
 
       <Card title="Weight History" icon="📅">
         {wtHistory.length === 0 ? (
-          <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No entries yet</div>
+          <div
+            style={{
+              textAlign: "center",
+              color: "var(--text3)",
+              padding: "20px 0",
+              fontSize: 13,
+            }}
+          >
+            No entries yet
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {displayHistory.map((h) => {
               const hId = getEntryId(h);
               const isEditing = editingId === String(hId);
               return (
-                <div key={String(hId) || h.date} style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 12px",
-                  background: isEditing ? "var(--accentBg)" : "var(--surface2)",
-                  borderRadius: 10,
-                  border: isEditing ? "1px solid var(--accent)" : "1px solid var(--border)",
-                  transition: "all .2s"
-                }}>
-                  <span style={{ fontSize: 12, color: "var(--text3)", flex: 1, minWidth: 0 }}>{h.date}</span>
+                <div
+                  key={String(hId) || h.date}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 12px",
+                    background: isEditing
+                      ? "var(--accentBg)"
+                      : "var(--surface2)",
+                    borderRadius: 10,
+                    border: isEditing
+                      ? "1px solid var(--accent)"
+                      : "1px solid var(--border)",
+                    transition: "all .2s",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text3)",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {h.date}
+                  </span>
 
                   {isEditing ? (
                     <input
@@ -848,19 +2232,37 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
                       type="number"
                       step="0.1"
                       value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onKeyDown={e => {
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
                         if (e.key === "Enter") saveEdit(h);
                         if (e.key === "Escape") setEditingId(null);
                       }}
                       style={{
-                        width: 72, background: "var(--surface)", border: "1px solid var(--accent)",
-                        borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700,
-                        color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right"
+                        width: 72,
+                        background: "var(--surface)",
+                        border: "1px solid var(--accent)",
+                        borderRadius: 7,
+                        padding: "4px 8px",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "var(--accent)",
+                        fontFamily: "'DM Sans',sans-serif",
+                        outline: "none",
+                        textAlign: "right",
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "var(--accent)",
+                        minWidth: 56,
+                        textAlign: "right",
+                      }}
+                    >
+                      {h.value} kg
+                    </span>
                   )}
 
                   {isEditing ? (
@@ -868,28 +2270,92 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
                       <button
                         onClick={() => saveEdit(h)}
                         title="Save"
-                        style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                        style={{
+                          background: "var(--green)",
+                          border: "none",
+                          borderRadius: 7,
+                          width: 28,
+                          height: 28,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
                       >
-                        <svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>
+                        <svg
+                          viewBox="0 0 10 8"
+                          width="11"
+                          fill="none"
+                          stroke="#fff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="1,4 4,7 9,1" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
                         title="Cancel"
-                        style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}
-                      >✕</button>
+                        style={{
+                          background: "var(--bg3)",
+                          border: "1px solid var(--border2)",
+                          borderRadius: 7,
+                          width: 28,
+                          height: 28,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontSize: 13,
+                          color: "var(--text3)",
+                        }}
+                      >
+                        ✕
+                      </button>
                     </>
                   ) : (
                     <>
                       <button
                         onClick={() => startEdit(h)}
                         title="Edit"
-                        style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}
-                      >✏️</button>
+                        style={{
+                          background: "var(--surface)",
+                          border: "1px solid var(--border2)",
+                          borderRadius: 7,
+                          width: 28,
+                          height: 28,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontSize: 13,
+                        }}
+                      >
+                        ✏️
+                      </button>
                       <button
                         onClick={() => deleteEntry(h)}
                         title="Delete"
-                        style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}
-                      >🗑</button>
+                        style={{
+                          background: "var(--surface)",
+                          border: "1px solid var(--border2)",
+                          borderRadius: 7,
+                          width: 28,
+                          height: 28,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontSize: 13,
+                        }}
+                      >
+                        🗑
+                      </button>
                     </>
                   )}
                 </div>
@@ -903,18 +2369,33 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
 }
 
 // ─── Main app (post-login) ────────────────────────────────────────────────────
-function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal }) {
+function MainApp({
+  user,
+  onLogout,
+  dark,
+  setDark,
+  userTargets,
+  userGoal,
+  userProfile,
+  onResetGoal,
+}) {
   const TARGETS = userTargets || DEFAULT_TARGETS;
   const [items, setItems] = useState({});
   const [wholeEggs, setWholeEggs] = useState(0);
   const [eggWhites, setEggWhites] = useState(0);
   const [customFoods, setCustomFoods] = useState([]);
-  const [presetFoods, setPresetFoods] = useState(() => store.get("vt_preset_foods", FOODS));
+  const [presetFoods, setPresetFoods] = useState(() =>
+    store.get("vt_preset_foods", FOODS),
+  );
   const [wtInput, setWtInput] = useState("");
   const [wtHistory, setWtHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("tracker");
-  const [tipIdx] = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
-  const [quoteIdx] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
+  const [tipIdx] = useState(() =>
+    Math.floor(Math.random() * HEALTH_TIPS.length),
+  );
+  const [quoteIdx] = useState(() =>
+    Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length),
+  );
   const [water, setWater] = useState(0);
   const [steps, setSteps] = useState("");
   const [syncing, setSyncing] = useState(false);
@@ -922,7 +2403,13 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [showAddModal, setShowAddModal] = useState(false);
   const syncTimer = useRef(null);
 
-  const macros = calcMacros(items, wholeEggs, eggWhites, customFoods, presetFoods);
+  const macros = calcMacros(
+    items,
+    wholeEggs,
+    eggWhites,
+    customFoods,
+    presetFoods,
+  );
   const rCal = TARGETS.cal - macros.cal;
   const rPro = TARGETS.pro - macros.pro;
   const rFat = TARGETS.fat - macros.fat;
@@ -938,8 +2425,25 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setEggWhites(0);
         setWater(0);
         setSteps("");
-        setCustomFoods(prev => prev.map(f => ({ ...f, checked: false })));
-        api.saveLog({ items: {}, wholeEggs: 0, eggWhites: 0, water: 0, steps: "" }).catch(console.error);
+        setCustomFoods((prev) => {
+          prev.forEach((f) => {
+            if (f.checked) {
+              const id = f._id || f.id;
+              api.toggleCustomFood(id, false).catch(console.error);
+            }
+          });
+          return prev.map((f) => ({ ...f, checked: false }));
+        });
+
+        api
+          .saveLog({
+            items: {},
+            wholeEggs: 0,
+            eggWhites: 0,
+            water: 0,
+            steps: "",
+          })
+          .catch(console.error);
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -996,37 +2500,63 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
     syncTimer.current = setTimeout(async () => {
-      try { await api.saveLog(patch); } catch (e) { console.error("Save error:", e); }
+      try {
+        await api.saveLog(patch);
+      } catch (e) {
+        console.error("Save error:", e);
+      }
       setSyncing(false);
     }, 800);
   }
 
   function toggleItem(id) {
-    setItems(prev => {
+    setItems((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       scheduleSave({ items: next });
       return next;
     });
   }
-  function handleWholeEggs(v) { setWholeEggs(v); scheduleSave({ wholeEggs: v }); }
-  function handleEggWhites(v) { setEggWhites(v); scheduleSave({ eggWhites: v }); }
-  function handleWater(v) { setWater(v); scheduleSave({ water: v }); }
-  function handleSteps(v) { setSteps(v); scheduleSave({ steps: v }); }
+  function handleWholeEggs(v) {
+    setWholeEggs(v);
+    scheduleSave({ wholeEggs: v });
+  }
+  function handleEggWhites(v) {
+    setEggWhites(v);
+    scheduleSave({ eggWhites: v });
+  }
+  function handleWater(v) {
+    setWater(v);
+    scheduleSave({ water: v });
+  }
+  function handleSteps(v) {
+    setSteps(v);
+    scheduleSave({ steps: v });
+  }
 
   async function addCustomFood(food) {
     try {
       const saved = await api.addCustomFood(food);
-      setCustomFoods(prev => [{ ...saved, id: saved._id || saved.id }, ...prev]);
-    } catch (err) { console.error("Add food error:", err); }
+      setCustomFoods((prev) => [
+        { ...saved, id: saved._id || saved.id },
+        ...prev,
+      ]);
+    } catch (err) {
+      console.error("Add food error:", err);
+    }
   }
 
   function deletePresetFood(id) {
-    setPresetFoods(prev => {
-      const next = prev.filter(f => f.id !== id);
+    setPresetFoods((prev) => {
+      const next = prev.filter((f) => f.id !== id);
       store.set("vt_preset_foods", next);
       return next;
     });
-    setItems(prev => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
+    setItems((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      scheduleSave({ items: next });
+      return next;
+    });
   }
 
   function resetPresetFoods() {
@@ -1035,36 +2565,55 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   }
 
   function calcProjections() {
-    if (!userProfile?.weight || !userProfile?.height || !userProfile?.age) return null;
+    if (!userProfile?.weight || !userProfile?.height || !userProfile?.age)
+      return null;
     const { bmr, tdee } = calcMifflin({ ...userProfile, goal: userGoal });
     const dailyDiff = TARGETS.cal - tdee;
     const weeklyKg = (dailyDiff * 7) / 7700;
     const curWeight = parseFloat(userProfile.weight);
     return [
-      { label: "1 Week",   weeks: 1 },
-      { label: "2 Weeks",  weeks: 2 },
-      { label: "1 Month",  weeks: 4.33 },
+      { label: "1 Week", weeks: 1 },
+      { label: "2 Weeks", weeks: 2 },
+      { label: "1 Month", weeks: 4.33 },
       { label: "2 Months", weeks: 8.66 },
       { label: "3 Months", weeks: 13 },
       { label: "6 Months", weeks: 26 },
-    ].map(p => {
+    ].map((p) => {
       const change = weeklyKg * p.weeks;
-      return { label: p.label, change: change.toFixed(1), projected: (curWeight + change).toFixed(1) };
+      return {
+        label: p.label,
+        change: change.toFixed(1),
+        projected: (curWeight + change).toFixed(1),
+      };
     });
   }
 
   async function toggleCustomFood(id) {
-    setCustomFoods(prev => {
-      const next = prev.map(f => f.id?.toString() === id.toString() || f._id?.toString() === id.toString()
-        ? { ...f, checked: !f.checked } : f);
-      const food = next.find(f => f.id?.toString() === id.toString() || f._id?.toString() === id.toString());
+    setCustomFoods((prev) => {
+      const next = prev.map((f) =>
+        f.id?.toString() === id.toString() ||
+        f._id?.toString() === id.toString()
+          ? { ...f, checked: !f.checked }
+          : f,
+      );
+      const food = next.find(
+        (f) =>
+          f.id?.toString() === id.toString() ||
+          f._id?.toString() === id.toString(),
+      );
       if (food) api.toggleCustomFood(id, food.checked).catch(console.error);
       return next;
     });
   }
 
   async function deleteCustomFood(id) {
-    setCustomFoods(prev => prev.filter(f => f.id?.toString() !== id.toString() && f._id?.toString() !== id.toString()));
+    setCustomFoods((prev) =>
+      prev.filter(
+        (f) =>
+          f.id?.toString() !== id.toString() &&
+          f._id?.toString() !== id.toString(),
+      ),
+    );
     api.deleteCustomFood(id).catch(console.error);
   }
 
@@ -1073,21 +2622,25 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     if (!v) return;
     try {
       const entry = await api.logWeight(v);
-      setWtHistory(prev => [...prev, entry]);
+      setWtHistory((prev) => [...prev, entry]);
       setWtInput("");
-    } catch (err) { console.error("Weight log error:", err); }
+    } catch (err) {
+      console.error("Weight log error:", err);
+    }
   }
 
   function weightPrediction() {
     if (wtHistory.length < 2) return null;
-    const first = wtHistory[0].value, last = wtHistory[wtHistory.length - 1].value;
+    const first = wtHistory[0].value,
+      last = wtHistory[wtHistory.length - 1].value;
     const isLosing = userGoal === "lose";
     const rate = isLosing
       ? (first - last) / wtHistory.length
       : (last - first) / wtHistory.length;
-    if (rate <= 0) return isLosing
-      ? "No downward trend yet — keep going!"
-      : "No upward trend yet — keep eating!";
+    if (rate <= 0)
+      return isLosing
+        ? "No downward trend yet — keep going!"
+        : "No upward trend yet — keep eating!";
     const target = parseFloat(userProfile?.targetWeight);
     if (!target) return null;
     const days = Math.ceil(Math.abs(last - target) / rate);
@@ -1095,10 +2648,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   }
 
   function getSuggestion() {
-    if (rPro > 25 && rFat < 10) return "Add Whey Protein or Egg Whites for protein 💪";
+    if (rPro > 25 && rFat < 10)
+      return "Add Whey Protein or Egg Whites for protein 💪";
     if (rPro > 20 && rFat > 10) return "Have some Soya or Moong Dal 🫘";
     if (rFat > 20) return "Skip Paneer today, try egg whites 🧀";
-    if (macros.cal >= TARGETS.cal && macros.pro >= TARGETS.pro) return "All goals met — amazing job! 🌿";
+    if (macros.cal >= TARGETS.cal && macros.pro >= TARGETS.pro)
+      return "All goals met — amazing job! 🌿";
     return "Keep logging to hit your targets!";
   }
 
@@ -1108,44 +2663,145 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [desktop, setDesktop] = useState(() => window.innerWidth >= 768);
   useEffect(() => {
     const fn = () => setDesktop(window.innerWidth >= 768);
-    window.addEventListener("resize", fn); return () => window.removeEventListener("resize", fn);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
   }, []);
 
   const navTabs = [
     { id: "tracker", icon: "🥗", label: "Tracker" },
-    { id: "weight",  icon: "⚖️", label: "Weight" },
-    { id: "health",  icon: "❤️", label: "Health" },
+    { id: "weight", icon: "⚖️", label: "Weight" },
+    { id: "health", icon: "❤️", label: "Health" },
   ];
 
   function Sidebar() {
     return (
-      <div style={{ width: 220, flexShrink: 0, background: "var(--surface)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", height: "100vh", position: "sticky", top: 0 }}>
+      <div
+        style={{
+          width: 220,
+          flexShrink: 0,
+          background: "var(--surface)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+        }}
+      >
         <div style={{ padding: "28px 24px 20px" }}>
-          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28, color: "var(--text)" }}>Vitals</div>
-          <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginTop: 2 }}>Daily Tracker</div>
+          <div
+            style={{
+              fontFamily: "'DM Serif Display',serif",
+              fontSize: 28,
+              color: "var(--text)",
+            }}
+          >
+            Vitals
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--text3)",
+              textTransform: "uppercase",
+              letterSpacing: ".06em",
+              marginTop: 2,
+            }}
+          >
+            Daily Tracker
+          </div>
         </div>
         <nav style={{ flex: 1, padding: "0 12px" }}>
-          {navTabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px",
-              borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit",
-              background: activeTab === t.id ? "var(--accentBg)" : "transparent",
-              color: activeTab === t.id ? "var(--accent)" : "var(--text2)",
-              fontWeight: activeTab === t.id ? 700 : 500, fontSize: 14, marginBottom: 2,
-              transition: "all .2s", textAlign: "left"
-            }}>
-              <span>{t.icon}</span>{t.label}
+          {navTabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "11px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                background:
+                  activeTab === t.id ? "var(--accentBg)" : "transparent",
+                color: activeTab === t.id ? "var(--accent)" : "var(--text2)",
+                fontWeight: activeTab === t.id ? 700 : 500,
+                fontSize: 14,
+                marginBottom: 2,
+                transition: "all .2s",
+                textAlign: "left",
+              }}
+            >
+              <span>{t.icon}</span>
+              {t.label}
             </button>
           ))}
         </nav>
-        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{user.name}</div>
-          <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>{user.email}</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setDark(d => !d)} style={{ flex: 1, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 0", cursor: "pointer", fontSize: 14, color: "var(--text2)" }}>{dark ? "☀️" : "🌙"}</button>
-            <button onClick={onLogout} style={{ flex: 1, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 6px", cursor: "pointer", fontSize: 12, color: "var(--text3)", fontFamily: "inherit" }}>Logout</button>
+        <div
+          style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+            {user.name}
           </div>
-          <button onClick={onResetGoal} style={{ width: "100%", marginTop: 8, background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 8, padding: "8px 0", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit", fontWeight: 600 }}>⚙ Edit Goals & Targets</button>
+          <div
+            style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}
+          >
+            {user.email}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setDark((d) => !d)}
+              style={{
+                flex: 1,
+                background: "var(--bg2)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "7px 0",
+                cursor: "pointer",
+                fontSize: 14,
+                color: "var(--text2)",
+              }}
+            >
+              {dark ? "☀️" : "🌙"}
+            </button>
+            <button
+              onClick={onLogout}
+              style={{
+                flex: 1,
+                background: "var(--bg2)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "7px 6px",
+                cursor: "pointer",
+                fontSize: 12,
+                color: "var(--text3)",
+                fontFamily: "inherit",
+              }}
+            >
+              Logout
+            </button>
+          </div>
+          <button
+            onClick={onResetGoal}
+            style={{
+              width: "100%",
+              marginTop: 8,
+              background: "var(--accentBg)",
+              border: "1px solid var(--accent)",
+              borderRadius: 8,
+              padding: "8px 0",
+              cursor: "pointer",
+              fontSize: 12,
+              color: "var(--accent)",
+              fontFamily: "inherit",
+              fontWeight: 600,
+            }}
+          >
+            ⚙ Edit Goals & Targets
+          </button>
         </div>
       </div>
     );
@@ -1153,15 +2809,47 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 
   function BottomNav() {
     return (
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", padding: "8px 0 12px", zIndex: 100 }}>
-        {navTabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-            color: activeTab === t.id ? "var(--accent)" : "var(--text3)"
-          }}>
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "var(--surface)",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          padding: "8px 0 12px",
+          zIndex: 100,
+        }}
+      >
+        {navTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              color: activeTab === t.id ? "var(--accent)" : "var(--text3)",
+            }}
+          >
             <span style={{ fontSize: 20 }}>{t.icon}</span>
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{t.label}</span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: ".04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {t.label}
+            </span>
           </button>
         ))}
       </div>
@@ -1171,90 +2859,329 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   function TrackerPanel() {
     return (
       <>
-        {showAddModal && <AddFoodModal onAdd={addCustomFood} onClose={() => setShowAddModal(false)} />}
-        <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+        {showAddModal && (
+          <AddFoodModal
+            onAdd={addCustomFood}
+            onClose={() => setShowAddModal(false)}
+          />
+        )}
+        <div
+          style={{
+            display: desktop ? "grid" : "block",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
           <div>
-            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: 20, marginBottom: 12, boxShadow: "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-                <MacroPill val={macros.cal} unit="" label="kcal" rem={rCal > 0 ? rCal + " left" : "✓ Met!"} color="var(--accent)" />
-                <MacroPill val={macros.pro} unit="g" label="protein" rem={rPro > 0 ? rPro.toFixed(0) + "g left" : "✓ Met!"} color="var(--green)" />
-                <MacroPill val={macros.fat} unit="g" label="fat" rem={rFat > 0 ? rFat.toFixed(0) + "g left" : "✓ Met!"} color="var(--amber)" />
+            <div
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: 20,
+                padding: 20,
+                marginBottom: 12,
+                boxShadow:
+                  "0 1px 3px rgba(26,24,20,.06),0 4px 16px rgba(26,24,20,.08)",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: 10,
+                  marginBottom: 16,
+                }}
+              >
+                <MacroPill
+                  val={macros.cal}
+                  unit=""
+                  label="kcal"
+                  rem={rCal > 0 ? rCal + " left" : "✓ Met!"}
+                  color="var(--accent)"
+                />
+                <MacroPill
+                  val={macros.pro}
+                  unit="g"
+                  label="protein"
+                  rem={rPro > 0 ? rPro.toFixed(0) + "g left" : "✓ Met!"}
+                  color="var(--green)"
+                />
+                <MacroPill
+                  val={macros.fat}
+                  unit="g"
+                  label="fat"
+                  rem={rFat > 0 ? rFat.toFixed(0) + "g left" : "✓ Met!"}
+                  color="var(--amber)"
+                />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {[
-                  { label: "Calories", val: macros.cal, max: TARGETS.cal, color: "var(--accent)" },
-                  { label: "Protein",  val: macros.pro, max: TARGETS.pro, color: "var(--green)" },
-                  { label: "Fat",      val: macros.fat, max: TARGETS.fat, color: "var(--amber)" },
-                ].map(p => (
-                  <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600, width: 60, flexShrink: 0 }}>{p.label}</span>
+                  {
+                    label: "Calories",
+                    val: macros.cal,
+                    max: TARGETS.cal,
+                    color: "var(--accent)",
+                  },
+                  {
+                    label: "Protein",
+                    val: macros.pro,
+                    max: TARGETS.pro,
+                    color: "var(--green)",
+                  },
+                  {
+                    label: "Fat",
+                    val: macros.fat,
+                    max: TARGETS.fat,
+                    color: "var(--amber)",
+                  },
+                ].map((p) => (
+                  <div
+                    key={p.label}
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text2)",
+                        fontWeight: 600,
+                        width: 60,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {p.label}
+                    </span>
                     <ProgBar val={p.val} max={p.max} color={p.color} />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "var(--accent)", fontWeight: 500, fontStyle: "italic", lineHeight: 1.5 }}>
+            <div
+              style={{
+                background: "var(--accentBg)",
+                border: "1px solid var(--accent)",
+                borderRadius: 10,
+                padding: "12px 14px",
+                marginBottom: 12,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                fontSize: 13,
+                color: "var(--accent)",
+                fontWeight: 500,
+                fontStyle: "italic",
+                lineHeight: 1.5,
+              }}
+            >
               <span style={{ fontSize: 16, flexShrink: 0 }}>✨</span>
               <span>"{MOTIVATIONAL_QUOTES[quoteIdx]}"</span>
             </div>
 
             <Card title="Food" icon="🥗">
-              {sections.filter(sec => presetFoods.some(f => f.section === sec)).map(sec => {
-                const secFoods = presetFoods.filter(f => f.section === sec);
-                return (
-                  <div key={sec}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".07em", margin: "12px 0 8px" }}>{sec}</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {secFoods.map(f => (
-                        <div key={f.id} style={{ position: "relative" }}>
-                          <FoodChip food={f} checked={!!items[f.id]} onToggle={() => toggleItem(f.id)} />
-                          <button onClick={() => deletePresetFood(f.id)} title="Remove food" style={{ position: "absolute", top: 4, right: 4, background: "var(--bg3)", border: "none", borderRadius: 99, width: 18, height: 18, cursor: "pointer", fontSize: 9, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, zIndex: 2, transition: "all .15s" }}>✕</button>
-                        </div>
-                      ))}
+              {sections
+                .filter((sec) => presetFoods.some((f) => f.section === sec))
+                .map((sec) => {
+                  const secFoods = presetFoods.filter((f) => f.section === sec);
+                  return (
+                    <div key={sec}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "var(--text3)",
+                          textTransform: "uppercase",
+                          letterSpacing: ".07em",
+                          margin: "12px 0 8px",
+                        }}
+                      >
+                        {sec}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 8,
+                        }}
+                      >
+                        {secFoods.map((f) => (
+                          <div key={f.id} style={{ position: "relative" }}>
+                            <FoodChip
+                              food={f}
+                              checked={!!items[f.id]}
+                              onToggle={() => toggleItem(f.id)}
+                            />
+                            <button
+                              onClick={() => deletePresetFood(f.id)}
+                              title="Remove food"
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                background: "var(--bg3)",
+                                border: "none",
+                                borderRadius: 99,
+                                width: 18,
+                                height: 18,
+                                cursor: "pointer",
+                                fontSize: 9,
+                                color: "var(--text3)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                lineHeight: 1,
+                                zIndex: 2,
+                                transition: "all .15s",
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               {presetFoods.length === 0 && (
                 <div style={{ textAlign: "center", padding: "12px 0" }}>
-                  <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>All preset foods removed.</div>
-                  <button onClick={resetPresetFoods} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 12, color: "var(--text2)", fontFamily: "inherit" }}>↺ Restore presets</button>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text3)",
+                      marginBottom: 10,
+                    }}
+                  >
+                    All preset foods removed.
+                  </div>
+                  <button
+                    onClick={resetPresetFoods}
+                    style={{
+                      background: "var(--surface2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      color: "var(--text2)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    ↺ Restore presets
+                  </button>
                 </div>
               )}
               {presetFoods.length > 0 && (
-                <button onClick={resetPresetFoods} style={{ marginTop: 12, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", fontFamily: "inherit", textDecoration: "underline" }}>↺ Restore all preset foods</button>
+                <button
+                  onClick={resetPresetFoods}
+                  style={{
+                    marginTop: 12,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    color: "var(--text3)",
+                    fontFamily: "inherit",
+                    textDecoration: "underline",
+                  }}
+                >
+                  ↺ Restore all preset foods
+                </button>
               )}
             </Card>
 
             <Card title="My Custom Foods" icon="✏️">
-              <button onClick={() => setShowAddModal(true)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--accentBg)", border: "1.5px dashed var(--accent)", borderRadius: 10, padding: "11px 0", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "inherit", marginBottom: customFoods.length ? 12 : 0, transition: "all .2s" }}>
+              <button
+                onClick={() => setShowAddModal(true)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: "var(--accentBg)",
+                  border: "1.5px dashed var(--accent)",
+                  borderRadius: 10,
+                  padding: "11px 0",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "var(--accent)",
+                  fontFamily: "inherit",
+                  marginBottom: customFoods.length ? 12 : 0,
+                  transition: "all .2s",
+                }}
+              >
                 ➕ Add Custom Food
               </button>
               {customFoods.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {customFoods.map(f => (
-                    <CustomFoodChip key={f.id} food={f} onToggle={() => toggleCustomFood(f.id)} onDelete={() => deleteCustomFood(f.id)} />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                  }}
+                >
+                  {customFoods.map((f) => (
+                    <CustomFoodChip
+                      key={f.id}
+                      food={f}
+                      onToggle={() => toggleCustomFood(f.id)}
+                      onDelete={() => deleteCustomFood(f.id)}
+                    />
                   ))}
                 </div>
               )}
               {customFoods.length === 0 && (
-                <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, paddingTop: 10 }}>No custom foods yet — add your own meals above!</div>
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "var(--text3)",
+                    fontSize: 12,
+                    paddingTop: 10,
+                  }}
+                >
+                  No custom foods yet — add your own meals above!
+                </div>
               )}
             </Card>
           </div>
 
           <div>
             <Card title="Eggs" icon="🥚">
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              >
                 {[
-                  { label: "Whole Eggs", val: wholeEggs, set: handleWholeEggs, sub: "70kcal · 6g P · 5g F each" },
-                  { label: "Egg Whites", val: eggWhites, set: handleEggWhites, sub: "17kcal · 3.6g P · 0g F each" },
-                ].map(e => (
-                  <div key={e.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {
+                    label: "Whole Eggs",
+                    val: wholeEggs,
+                    set: handleWholeEggs,
+                    sub: "70kcal · 6g P · 5g F each",
+                  },
+                  {
+                    label: "Egg Whites",
+                    val: eggWhites,
+                    set: handleEggWhites,
+                    sub: "17kcal · 3.6g P · 0g F each",
+                  },
+                ].map((e) => (
+                  <div
+                    key={e.label}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{e.label}</div>
-                      <div style={{ fontSize: 11, color: "var(--text3)" }}>{e.sub}</div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "var(--text)",
+                        }}
+                      >
+                        {e.label}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text3)" }}>
+                        {e.sub}
+                      </div>
                     </div>
                     <Stepper val={e.val} onChange={e.set} />
                   </div>
@@ -1265,26 +3192,99 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
             <Card title="Weight Projection" icon="📈" defaultOpen={true}>
               {(() => {
                 const projections = calcProjections();
-                if (!projections) return (
-                  <div style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: "12px 0" }}>
-                    Complete your goal setup to see projections.<br />
-                    <button onClick={onResetGoal} style={{ marginTop: 8, background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit" }}>⚙ Set Goals</button>
-                  </div>
-                );
+                if (!projections)
+                  return (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text3)",
+                        textAlign: "center",
+                        padding: "12px 0",
+                      }}
+                    >
+                      Complete your goal setup to see projections.
+                      <br />
+                      <button
+                        onClick={onResetGoal}
+                        style={{
+                          marginTop: 8,
+                          background: "var(--accentBg)",
+                          border: "1px solid var(--accent)",
+                          borderRadius: 8,
+                          padding: "7px 14px",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          color: "var(--accent)",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        ⚙ Set Goals
+                      </button>
+                    </div>
+                  );
                 return (
                   <>
-                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>Based on your {TARGETS.cal} kcal/day target vs your TDEE</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text3)",
+                        marginBottom: 12,
+                      }}
+                    >
+                      Based on your {TARGETS.cal} kcal/day target vs your TDEE
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 8,
+                      }}
+                    >
                       {projections.map((p, i) => {
                         const isLoss = parseFloat(p.change) < 0;
                         const isGood = userGoal === "lose" ? isLoss : !isLoss;
                         return (
-                          <div key={i} style={{ background: isGood ? "var(--greenBg)" : "var(--accentBg)", border: `1px solid ${isGood ? "var(--green)" : "var(--accent)"}`, borderRadius: 10, padding: "12px" }}>
-                            <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 5 }}>{p.label}</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: isGood ? "var(--green)" : "var(--accent)", lineHeight: 1, marginBottom: 3 }}>
-                              {parseFloat(p.change) > 0 ? "+" : ""}{p.change} kg
+                          <div
+                            key={i}
+                            style={{
+                              background: isGood
+                                ? "var(--greenBg)"
+                                : "var(--accentBg)",
+                              border: `1px solid ${isGood ? "var(--green)" : "var(--accent)"}`,
+                              borderRadius: 10,
+                              padding: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: "var(--text3)",
+                                textTransform: "uppercase",
+                                letterSpacing: ".06em",
+                                marginBottom: 5,
+                              }}
+                            >
+                              {p.label}
                             </div>
-                            <div style={{ fontSize: 11, color: "var(--text3)" }}>→ {p.projected} kg</div>
+                            <div
+                              style={{
+                                fontSize: 20,
+                                fontWeight: 700,
+                                color: isGood
+                                  ? "var(--green)"
+                                  : "var(--accent)",
+                                lineHeight: 1,
+                                marginBottom: 3,
+                              }}
+                            >
+                              {parseFloat(p.change) > 0 ? "+" : ""}
+                              {p.change} kg
+                            </div>
+                            <div
+                              style={{ fontSize: 11, color: "var(--text3)" }}
+                            >
+                              → {p.projected} kg
+                            </div>
                           </div>
                         );
                       })}
@@ -1299,61 +3299,203 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     );
   }
 
-  const healthPanelProps = { desktop, water, handleWater, wtHistory, tipIdx, steps, handleSteps, userProfile };
+  const healthPanelProps = {
+    desktop,
+    water,
+    handleWater,
+    wtHistory,
+    tipIdx,
+    steps,
+    handleSteps,
+    userProfile,
+  };
 
   const panels = {
     tracker: <TrackerPanel />,
-    weight: <WeightPanel
-      wtInput={wtInput}
-      setWtInput={setWtInput}
-      logWeight={logWeight}
-      wtHistory={wtHistory}
-      setWtHistory={setWtHistory}
-      dark={dark}
-      pred={pred}
-      desktop={desktop}
-    />,
-    health: <HealthPanel {...healthPanelProps} />
+    weight: (
+      <WeightPanel
+        wtInput={wtInput}
+        setWtInput={setWtInput}
+        logWeight={logWeight}
+        wtHistory={wtHistory}
+        setWtHistory={setWtHistory}
+        dark={dark}
+        pred={pred}
+        desktop={desktop}
+      />
+    ),
+    health: <HealthPanel {...healthPanelProps} />,
   };
 
   if (loadingData) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 32, color: "var(--text)" }}>Vitals</div>
-        <div style={{ fontSize: 13, color: "var(--text3)" }}>Loading your data…</div>
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--bg3)", overflow: "hidden" }}>
-          <div style={{ width: "60%", height: "100%", background: "var(--accent)", borderRadius: 99, animation: "pulse 1.2s ease-in-out infinite" }} />
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'DM Serif Display',serif",
+            fontSize: 32,
+            color: "var(--text)",
+          }}
+        >
+          Vitals
+        </div>
+        <div style={{ fontSize: 13, color: "var(--text3)" }}>
+          Loading your data…
+        </div>
+        <div
+          style={{
+            width: 40,
+            height: 4,
+            borderRadius: 99,
+            background: "var(--bg3)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: "60%",
+              height: "100%",
+              background: "var(--accent)",
+              borderRadius: 99,
+              animation: "pulse 1.2s ease-in-out infinite",
+            }}
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <div
+      style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}
+    >
       {desktop && <Sidebar />}
-      <div style={{ flex: 1, overflowY: "auto", padding: desktop ? "28px 32px" : "20px 16px 80px" }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: desktop ? "28px 32px" : "20px 16px 80px",
+        }}
+      >
         {!desktop && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 24,
+            }}
+          >
             <div>
-              <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: "var(--text)" }}>Vitals</div>
-              <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>Hi, {user.name}</div>
+              <div
+                style={{
+                  fontFamily: "'DM Serif Display',serif",
+                  fontSize: 26,
+                  color: "var(--text)",
+                }}
+              >
+                Vitals
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text3)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                }}
+              >
+                Hi, {user.name}
+              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {syncing && <span style={{ fontSize: 11, color: "var(--text3)", animation: "pulse 1s infinite" }}>saving…</span>}
-              <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 12, color: "var(--accent)", fontFamily: "inherit", fontWeight: 600 }}>⚙ Goals</button>
-              <button onClick={() => setDark(d => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 14px", cursor: "pointer", fontSize: 13, color: "var(--text2)", fontFamily: "inherit" }}>{dark ? "☀️" : "🌙"}</button>
+              {syncing && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text3)",
+                    animation: "pulse 1s infinite",
+                  }}
+                >
+                  saving…
+                </span>
+              )}
+              <button
+                onClick={onResetGoal}
+                style={{
+                  background: "var(--accentBg)",
+                  border: "1px solid var(--accent)",
+                  borderRadius: 40,
+                  padding: "6px 12px",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  color: "var(--accent)",
+                  fontFamily: "inherit",
+                  fontWeight: 600,
+                }}
+              >
+                ⚙ Goals
+              </button>
+              <button
+                onClick={() => setDark((d) => !d)}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 40,
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "var(--text2)",
+                  fontFamily: "inherit",
+                }}
+              >
+                {dark ? "☀️" : "🌙"}
+              </button>
             </div>
           </div>
         )}
         {desktop && (
-          <div style={{ marginBottom: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <div
+            style={{
+              marginBottom: 24,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+            }}
+          >
             <div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
-                {navTabs.find(t => t.id === activeTab)?.icon} {navTabs.find(t => t.id === activeTab)?.label}
+              <div
+                style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}
+              >
+                {navTabs.find((t) => t.id === activeTab)?.icon}{" "}
+                {navTabs.find((t) => t.id === activeTab)?.label}
               </div>
-              <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
+              <div
+                style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}
+              >
+                Welcome Back, {user.name}
+              </div>
             </div>
-            {syncing && <span style={{ fontSize: 12, color: "var(--text3)", animation: "pulse 1s infinite" }}>☁️ Saving…</span>}
+            {syncing && (
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "var(--text3)",
+                  animation: "pulse 1s infinite",
+                }}
+              >
+                ☁️ Saving…
+              </span>
+            )}
           </div>
         )}
         {panels[activeTab]}
@@ -1366,18 +3508,35 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
-  const [dark, setDark] = useState(() => { try { return JSON.parse(localStorage.getItem("vt_dark")) ?? false; } catch { return false; } });
+  const [dark, setDark] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("vt_dark")) ?? false;
+    } catch {
+      return false;
+    }
+  });
   const [authChecking, setAuthChecking] = useState(true);
-  const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("vt_targets"));
-  const [userTargets, setUserTargets] = useState(() => store.get("vt_targets", DEFAULT_TARGETS));
-  const [userGoal, setUserGoal] = useState(() => localStorage.getItem("vt_goal") || "lose");
-  const [userProfile, setUserProfile] = useState(() => store.get("vt_profile", null));
+  const [onboardingDone, setOnboardingDone] = useState(
+    () => !!localStorage.getItem("vt_targets"),
+  );
+  const [userTargets, setUserTargets] = useState(() =>
+    store.get("vt_targets", DEFAULT_TARGETS),
+  );
+  const [userGoal, setUserGoal] = useState(
+    () => localStorage.getItem("vt_goal") || "lose",
+  );
+  const [userProfile, setUserProfile] = useState(() =>
+    store.get("vt_profile", null),
+  );
 
   // ─── Restore session ────────────────────────────────────────────────────────
   useEffect(() => {
     async function restoreSession() {
       const token = localStorage.getItem("vt_token");
-      if (!token) { setAuthChecking(false); return; }
+      if (!token) {
+        setAuthChecking(false);
+        return;
+      }
       try {
         const data = await api.me();
         setUser(data.user);
@@ -1393,17 +3552,20 @@ export default function App() {
   // ─── Load profile/goals from DB after login (cross-device sync) ────────────
   useEffect(() => {
     if (!user) return;
-    api.getProfile().then(data => {
-      if (data && data.targets) {
-        setUserGoal(data.goal);
-        setUserProfile(data.profile);
-        setUserTargets(data.targets);
-        localStorage.setItem("vt_goal", data.goal);
-        store.set("vt_profile", data.profile);
-        store.set("vt_targets", data.targets);
-        setOnboardingDone(true);
-      }
-    }).catch(console.error);
+    api
+      .getProfile()
+      .then((data) => {
+        if (data && data.targets) {
+          setUserGoal(data.goal);
+          setUserProfile(data.profile);
+          setUserTargets(data.targets);
+          localStorage.setItem("vt_goal", data.goal);
+          store.set("vt_profile", data.profile);
+          store.set("vt_targets", data.targets);
+          setOnboardingDone(true);
+        }
+      })
+      .catch(console.error);
   }, [user]);
 
   useEffect(() => {
@@ -1411,7 +3573,7 @@ export default function App() {
     const t = dark ? DARK : LIGHT;
     const root = document.documentElement;
     Object.entries(t).forEach(([k, v]) => {
-      const cssKey = "--" + k.replace(/([A-Z])/g, m => "-" + m.toLowerCase());
+      const cssKey = "--" + k.replace(/([A-Z])/g, (m) => "-" + m.toLowerCase());
       root.style.setProperty(cssKey, v);
     });
     document.body.style.background = t.bg;
@@ -1429,8 +3591,10 @@ export default function App() {
   useEffect(() => {
     if (!document.getElementById("vt-fonts")) {
       const l = document.createElement("link");
-      l.id = "vt-fonts"; l.rel = "stylesheet";
-      l.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700;800&display=swap";
+      l.id = "vt-fonts";
+      l.rel = "stylesheet";
+      l.href =
+        "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700;800&display=swap";
       document.head.appendChild(l);
     }
     if (!document.getElementById("vt-global")) {
@@ -1455,7 +3619,8 @@ export default function App() {
     document.head.appendChild(sp);
     if (!document.getElementById("vt-favicon")) {
       const canvas = document.createElement("canvas");
-      canvas.width = 32; canvas.height = 32;
+      canvas.width = 32;
+      canvas.height = 32;
       const ctx = canvas.getContext("2d");
       ctx.fillStyle = "#D4582A";
       ctx.beginPath();
@@ -1467,18 +3632,27 @@ export default function App() {
       ctx.textBaseline = "middle";
       ctx.fillText("V", 16, 17);
       const link = document.createElement("link");
-      link.id = "vt-favicon"; link.rel = "icon"; link.href = canvas.toDataURL();
+      link.id = "vt-favicon";
+      link.rel = "icon";
+      link.href = canvas.toDataURL();
       document.head.appendChild(link);
     }
     if (!document.getElementById("chartjs")) {
       const sc = document.createElement("script");
-      sc.id = "chartjs"; sc.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js";
+      sc.id = "chartjs";
+      sc.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js";
       document.head.appendChild(sc);
     }
   }, []);
 
-  function handleAuth(u) { setUser(u); }
-  function handleLogout() { setUser(null); localStorage.removeItem("vt_token"); }
+  function handleAuth(u) {
+    setUser(u);
+  }
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("vt_token");
+  }
 
   function handleOnboardingComplete({ goal, profile, targets }) {
     setUserGoal(goal);
@@ -1492,18 +3666,43 @@ export default function App() {
     api.saveProfile({ goal, profile, targets }).catch(console.error);
   }
 
-  function handleResetGoal() { setOnboardingDone(false); }
+  function handleResetGoal() {
+    setOnboardingDone(false);
+  }
 
   if (authChecking) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 32, color: "var(--text)" }}>Vitals</div>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'DM Serif Display',serif",
+            fontSize: 32,
+            color: "var(--text)",
+          }}
+        >
+          Vitals
+        </div>
       </div>
     );
   }
 
   if (!user) return <AuthPage onAuth={handleAuth} />;
-  if (!onboardingDone) return <OnboardingPage onComplete={handleOnboardingComplete} dark={dark} setDark={setDark} />;
+  if (!onboardingDone)
+    return (
+      <OnboardingPage
+        onComplete={handleOnboardingComplete}
+        dark={dark}
+        setDark={setDark}
+      />
+    );
   return (
     <MainApp
       user={user}
