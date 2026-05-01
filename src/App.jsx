@@ -751,77 +751,68 @@ function HealthPanel({ desktop, water, handleWater, wtHistory, tipIdx, steps, ha
 
 // ─── WeightPanel ──────────────────────────────────────────────────────────────
 function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, dark, pred, desktop }) {
-  // ── Edit / delete state ────────────────────────────────────────────────────
-  const [editingIdx, setEditingIdx] = useState(null);   // index in reversed slice
+  const [editingId, setEditingId] = useState(null);   // track by ID, not index
   const [editValue, setEditValue] = useState("");
 
-  // We display reversed history (newest first). Map back to original index:
-  // reversedIdx → original index = (wtHistory.length - 1) - reversedIdx
-  function origIdx(reversedIdx) {
-    return wtHistory.length - 1 - reversedIdx;
+  const displayHistory = [...wtHistory].reverse().slice(0, 10);
+
+  function getEntryId(entry) {
+    return entry._id || entry.id;
   }
 
-  function startEdit(reversedIdx) {
-    setEditingIdx(reversedIdx);
-    setEditValue(String(wtHistory[origIdx(reversedIdx)].value));
+  function startEdit(entry) {
+    setEditingId(getEntryId(entry));
+    setEditValue(String(entry.value));
   }
 
-async function saveEdit(reversedIdx) {
-  const v = parseFloat(editValue);
-  if (!v || v <= 0) { setEditingIdx(null); return; }
+  async function saveEdit(entry) {
+    const v = parseFloat(editValue);
+    const entryId = getEntryId(entry);
 
-  const idx = origIdx(reversedIdx);
-  const entry = wtHistory[idx];
-  
-  // ← THIS is the fix: surface the ID problem immediately
-  const entryId = entry._id || entry.id;
-  if (!entryId) {
-    console.error("No ID on weight entry:", entry);
-    setEditingIdx(null);
-    return;
-  }
+    if (!v || v <= 0 || !entryId) {
+      setEditingId(null);
+      return;
+    }
 
-  const original = { ...entry };
-  setWtHistory(prev => {
-    const next = [...prev];
-    next[idx] = { ...entry, value: v };
-    return next;
-  });
-  setEditingIdx(null); // close edit mode optimistically
+    setEditingId(null); // close immediately
 
-  try {
-    await api.updateWeight(entryId, v);
-  } catch (err) {
-    console.error("Update weight error:", err);
-    // Revert on failure
-    setWtHistory(prev => {
-      const next = [...prev];
-      next[idx] = original;
-      return next;
-    });
-  }
-}
+    // Optimistic update
+    setWtHistory(prev =>
+      prev.map(e => getEntryId(e) === entryId ? { ...e, value: v } : e)
+    );
 
-  async function deleteEntry(reversedIdx) {
-    const idx = origIdx(reversedIdx);
-    const entry = wtHistory[idx];
     try {
-      // Optimistic remove
-      setWtHistory(prev => prev.filter((_, i) => i !== idx));
-      await api.deleteWeight(entry._id || entry.id);
+      await api.updateWeight(entryId, v);
+    } catch (err) {
+      console.error("Update weight error:", err);
+      // Revert
+      setWtHistory(prev =>
+        prev.map(e => getEntryId(e) === entryId ? { ...e, value: entry.value } : e)
+      );
+    }
+  }
+
+  async function deleteEntry(entry) {
+    const entryId = getEntryId(entry);
+    if (!entryId) return;
+
+    // Optimistic remove
+    setWtHistory(prev => prev.filter(e => getEntryId(e) !== entryId));
+
+    try {
+      await api.deleteWeight(entryId);
     } catch (err) {
       console.error("Delete weight error:", err);
-      // Revert
+      // Revert — re-insert in original position by date
       setWtHistory(prev => {
-        const next = [...prev];
-        next.splice(idx, 0, entry);
+        const next = [...prev, entry];
+        next.sort((a, b) => a.date.localeCompare(b.date));
         return next;
       });
     }
-    if (editingIdx === reversedIdx) setEditingIdx(null);
-  }
 
-  const displayHistory = [...wtHistory].reverse().slice(0, 10);
+    if (editingId === entryId) setEditingId(null);
+  }
 
   return (
     <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
@@ -851,76 +842,73 @@ async function saveEdit(reversedIdx) {
           <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No entries yet</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {displayHistory.map((h, reversedIdx) => (
-              <div key={reversedIdx} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 12px",
-                background: editingIdx === reversedIdx ? "var(--accentBg)" : "var(--surface2)",
-                borderRadius: 10,
-                border: editingIdx === reversedIdx ? "1px solid var(--accent)" : "1px solid var(--border)",
-                transition: "all .2s"
-              }}>
-                {/* Date */}
-                <span style={{ fontSize: 12, color: "var(--text3)", flex: 1, minWidth: 0 }}>{h.date}</span>
+            {displayHistory.map((h) => {
+              const hId = getEntryId(h);
+              const isEditing = editingId === hId;
+              return (
+                <div key={hId || h.date} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 12px",
+                  background: isEditing ? "var(--accentBg)" : "var(--surface2)",
+                  borderRadius: 10,
+                  border: isEditing ? "1px solid var(--accent)" : "1px solid var(--border)",
+                  transition: "all .2s"
+                }}>
+                  <span style={{ fontSize: 12, color: "var(--text3)", flex: 1, minWidth: 0 }}>{h.date}</span>
 
-                {/* Value — editable inline or static */}
-                {editingIdx === reversedIdx ? (
-                  <input
-                    autoFocus
-                    type="number"
-                    step="0.1"
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") saveEdit(reversedIdx);
-                      if (e.key === "Escape") setEditingIdx(null);
-                    }}
-                    style={{
-                      width: 72, background: "var(--surface)", border: "1px solid var(--accent)",
-                      borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700,
-                      color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right"
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
-                )}
+                  {isEditing ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      step="0.1"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") saveEdit(h);
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      style={{
+                        width: 72, background: "var(--surface)", border: "1px solid var(--accent)",
+                        borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700,
+                        color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right"
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
+                  )}
 
-                {/* Action buttons */}
-                {editingIdx === reversedIdx ? (
-                  <>
-                    {/* Save */}
-                    <button
-                      onClick={() => saveEdit(reversedIdx)}
-                      title="Save"
-                      style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "opacity .15s" }}
-                    >
-                      <svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>
-                    </button>
-                    {/* Cancel */}
-                    <button
-                      onClick={() => setEditingIdx(null)}
-                      title="Cancel"
-                      style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}
-                    >✕</button>
-                  </>
-                ) : (
-                  <>
-                    {/* Edit */}
-                    <button
-                      onClick={() => startEdit(reversedIdx)}
-                      title="Edit"
-                      style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, transition: "border-color .15s, background .15s" }}
-                    >✏️</button>
-                    {/* Delete */}
-                    <button
-                      onClick={() => deleteEntry(reversedIdx)}
-                      title="Delete"
-                      style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, transition: "border-color .15s, background .15s" }}
-                    >🗑</button>
-                  </>
-                )}
-              </div>
-            ))}
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={() => saveEdit(h)}
+                        title="Save"
+                        style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                      >
+                        <svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        title="Cancel"
+                        style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}
+                      >✕</button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => startEdit(h)}
+                        title="Edit"
+                        style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}
+                      >✏️</button>
+                      <button
+                        onClick={() => deleteEntry(h)}
+                        title="Delete"
+                        style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}
+                      >🗑</button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
@@ -1079,6 +1067,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     if (!v) return;
     try {
       const entry = await api.logWeight(v);
+      console.log("logged entry:", entry)
       setWtHistory(prev => [...prev, entry]);
       setWtInput("");
     } catch (err) { console.error("Weight log error:", err); }
