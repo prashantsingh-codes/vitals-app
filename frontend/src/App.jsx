@@ -582,6 +582,212 @@ function WeeklySummaryCard({ targets }) {
   );
 }
 
+// ─── WeightPanel ──────────────────────────────────────────────────────────────
+function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, dark, pred, desktop }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const displayHistory = [...wtHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+  function getEntryId(e) { return e._id || e.id; }
+  function startEdit(e) { setEditingId(getEntryId(e)); setEditValue(String(e.value)); }
+  async function saveEdit(e) {
+    const v = parseFloat(editValue); const id = getEntryId(e); if (!v||v<=0||!id) { setEditingId(null); return; }
+    setEditingId(null); setWtHistory((prev) => prev.map((x) => getEntryId(x)===id ? { ...x, value: v } : x));
+    try { await api.updateWeight(id, v); } catch (err) { console.error(err); setWtHistory((prev) => prev.map((x) => getEntryId(x)===id ? { ...x, value: e.value } : x)); }
+  }
+  async function deleteEntry(e) {
+    const id = getEntryId(e); if (!id) return;
+    setWtHistory((prev) => prev.filter((x) => getEntryId(x) !== id));
+    try { await api.deleteWeight(id); } catch (err) { console.error(err); setWtHistory((prev) => { const n = [...prev, e]; n.sort((a,b) => a.date.localeCompare(b.date)); return n; }); }
+    if (editingId === id) setEditingId(null);
+  }
+
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    if (!wtHistory.length || !window.Chart) return;
+    const gridColor = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
+    const textColor = dark ? "#6B6358" : "#9A9386";
+    chartRef.current = new window.Chart(canvasRef.current.getContext("2d"), {
+      type: "line",
+      data: {
+        labels: wtHistory.map((h) => h.displayDate || h.date),
+        datasets: [{ data: wtHistory.map((h) => h.value), borderColor: "#D4582A", backgroundColor: "rgba(212,88,42,.08)", borderWidth: 2, pointBackgroundColor: "#D4582A", pointBorderColor: dark ? "#1F1D19" : "#fff", pointBorderWidth: 2, pointRadius: 5, tension: 0.4, fill: true }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + "kg" } } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 }, callback: (v) => v + "kg" } },
+        },
+      },
+    });
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+  }, [wtHistory, dark]);
+
+  return (
+    <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+      <Card title="Log Weight" icon="⚖️">
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <input value={wtInput} onChange={(e) => setWtInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && logWeight()} placeholder="Weight in kg" type="number" step="0.1" style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
+          <button onClick={logWeight} style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Log</button>
+        </div>
+        {wtHistory.length === 0
+          ? <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No weight entries yet</div>
+          : <canvas ref={canvasRef} height={160} style={{ width: "100%" }} />
+        }
+        {pred && <div style={{ background: "var(--greenBg)", border: "1px solid var(--green)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--green)", fontWeight: 600, marginTop: 10, display: "flex", alignItems: "center", gap: 7 }}>🎯 {pred}</div>}
+      </Card>
+
+      <Card title="Weight History" icon="📅">
+        {wtHistory.length === 0 ? <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No entries yet</div> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {displayHistory.map((h) => {
+              const hId = String(getEntryId(h)); const isEditing = editingId === hId;
+              return (
+                <div key={hId||h.date} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: isEditing ? "var(--accentBg)" : "var(--surface2)", borderRadius: 10, border: isEditing ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
+                  <span style={{ fontSize: 12, color: "var(--text3)", flex: 1 }}>{h.displayDate || h.date}</span>
+                  {isEditing
+                    ? <input autoFocus type="number" step="0.1" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => { if (e.key==="Enter") saveEdit(h); if (e.key==="Escape") setEditingId(null); }} style={{ width: 72, background: "var(--surface)", border: "1px solid var(--accent)", borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700, color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right" }} />
+                    : <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
+                  }
+                  {isEditing ? <>
+                    <button onClick={() => saveEdit(h)} style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg></button>
+                    <button onClick={() => setEditingId(null)} style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}>✕</button>
+                  </> : <>
+                    <button onClick={() => startEdit(h)} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>✏️</button>
+                    <button onClick={() => deleteEntry(h)} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>🗑</button>
+                  </>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ─── MiniLineChart ────────────────────────────────────────────────────────────
+function MiniLineChart({ history, dark, color, unit, yCallback }) {
+  const cRef = useRef(null); const chRef = useRef(null);
+  useEffect(() => {
+    if (!cRef.current) return;
+    if (chRef.current) { chRef.current.destroy(); chRef.current = null; }
+    if (!history.length || !window.Chart) return;
+    const gridColor = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
+    const textColor = dark ? "#6B6358" : "#9A9386";
+    chRef.current = new window.Chart(cRef.current.getContext("2d"), {
+      type: "line",
+      data: { labels: history.map((h) => h.date), datasets: [{ data: history.map((h) => h.value), borderColor: color, backgroundColor: color + "14", borderWidth: 2, pointBackgroundColor: color, pointBorderColor: dark ? "#1F1D19" : "#fff", pointBorderWidth: 2, pointRadius: 4, tension: 0.4, fill: true }] },
+      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + unit } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 10 }, maxTicksLimit: 7 } }, y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 10 }, callback: yCallback || ((v) => v + unit) } } } },
+    });
+    return () => { if (chRef.current) { chRef.current.destroy(); chRef.current = null; } };
+  }, [history, dark, color, unit]);
+  if (!history.length) return null;
+  return <canvas ref={cRef} height={130} style={{ width: "100%" }} />;
+}
+
+// ─── HealthPanel ──────────────────────────────────────────────────────────────
+function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userProfile, targets, dark, desktop, tipIdx }) {
+  const [localSteps, setLocalSteps] = useState(steps);
+  const [stepsHistory, setStepsHistory] = useState(() => store.get("vt_steps_history", []));
+  const [waterHistory, setWaterHistory] = useState(() => store.get("vt_water_history", []));
+
+  useEffect(() => { setLocalSteps(steps); }, [steps]);
+
+  useEffect(() => {
+    if (!steps) return;
+    const today = todayStr();
+    setStepsHistory((prev) => {
+      const filtered = prev.filter((e) => e.date !== today);
+      const next = [...filtered, { date: today, value: Number(steps) }].sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+      store.set("vt_steps_history", next);
+      return next;
+    });
+  }, [steps]);
+
+  useEffect(() => {
+    const today = todayStr();
+    setWaterHistory((prev) => {
+      const filtered = prev.filter((e) => e.date !== today);
+      const next = [...filtered, { date: today, value: water }].sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+      store.set("vt_water_history", next);
+      return next;
+    });
+  }, [water]);
+
+  const heightCm = parseFloat(userProfile?.height);
+  const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
+  const bmi = heightCm > 0 && latestWeight ? (latestWeight / (heightCm / 100) ** 2).toFixed(1) : null;
+  const waterLitres = (water * 0.25).toFixed(2);
+
+  return (
+    <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+      <div>
+        <Card title="Today's Tip" icon="✨">
+          <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 12, padding: 16, fontSize: 14, color: "var(--accent)", fontWeight: 600, lineHeight: 1.6 }}>{HEALTH_TIPS[tipIdx]}</div>
+        </Card>
+
+        <Card title="Hydration Tracker" icon="💧">
+          <div style={{ textAlign: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue,#2563EB)" }}>{water}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today · <span style={{ color: "var(--blue,#2563EB)", fontWeight: 600 }}>{waterLitres} L</span> · goal: 15 gl (3.75 L)</div>
+            <ProgBar val={water} max={15} color="#2563EB" />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: waterHistory.length > 1 ? 16 : 0 }}>
+            <button onClick={() => handleWater(Math.max(0, water-1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
+            <button onClick={() => handleWater(Math.min(25, water+1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
+          </div>
+          {waterHistory.length > 1 && <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Water History</div>
+            <MiniLineChart history={waterHistory.slice(-14)} dark={dark} color="#2563EB" unit=" gl" />
+          </>}
+        </Card>
+
+        <WeeklySummaryCard targets={targets} />
+      </div>
+
+      <div>
+        {bmi !== null && (
+          <Card title="BMI Estimate" icon="📊">
+            <div style={{ textAlign: "center", padding: "8px 0" }}>
+              <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue,#2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
+                {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>Based on latest weight · {heightCm}cm height</div>
+            </div>
+          </Card>
+        )}
+
+        <Card title="Steps Tracker" icon="🚶">
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input type="number" value={localSteps} placeholder="Enter steps today" onChange={(e) => { setLocalSteps(e.target.value); handleSteps(e.target.value); }} style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
+          </div>
+          {localSteps > 0 && <div style={{ marginBottom: stepsHistory.length > 1 ? 12 : 0 }}>
+            <ProgBar val={parseInt(localSteps)} max={10000} color="var(--green)" />
+            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>{parseInt(localSteps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>≈ {Math.round(parseInt(localSteps) * 0.04)} kcal burned</div>
+          </div>}
+          {stepsHistory.length > 1 && <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6, marginTop: localSteps > 0 ? 0 : 4 }}>Step History</div>
+            <MiniLineChart history={stepsHistory.slice(-14)} dark={dark} color="#2D7A5C" unit=" steps" yCallback={(v) => v >= 1000 ? (v/1000).toFixed(1)+"k" : v} />
+          </>}
+        </Card>
+
+        <Card title="All Health Tips" icon="📋" defaultOpen={false}>
+          {HEALTH_TIPS.map((tip, i) => (
+            <div key={i} style={{ fontSize: 13, color: "var(--text2)", padding: "8px 0", borderBottom: i < HEALTH_TIPS.length - 1 ? "1px solid var(--border)" : "none" }}>{tip}</div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ─── MainApp ──────────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal, serverPresetFoods, serverPermDeletedPromoted, serverEverPromoted, serverPermDeletedPresets }) {
   const TARGETS = userTargets || DEFAULT_TARGETS;
@@ -590,7 +796,25 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [wholeEggs, setWholeEggs] = useState(0);
   const [eggWhites, setEggWhites] = useState(0);
   const [customFoods, setCustomFoods] = useState([]);
-  const [presetFoods, setPresetFoods] = useState(() => serverPresetFoods?.length > 0 ? serverPresetFoods : (store.get("vt_preset_foods", null) || FOODS));
+  // ✅ Always rebuild presetFoods from everPromoted + permDeletedPromoted + permDeletedPresets
+  // Never blindly trust the saved presetFoods array, which may be missing "deleted for today" promoted foods
+  const [presetFoods, setPresetFoods] = useState(() => {
+    const pDelPromoted = serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []);
+    const pDelPresets  = serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []);
+    const ePromoted    = serverEverPromoted         || store.get("vt_ever_promoted",          []);
+    const savedFoods   = serverPresetFoods?.length > 0 ? serverPresetFoods : (store.get("vt_preset_foods", null) || FOODS);
+
+    // Start with saved preset foods as base (for ordering / custom data)
+    // Then ensure all everPromoted foods that aren't permDeletedPromoted are included
+    const base = savedFoods.filter((f) => {
+      if (f._promoted) return !pDelPromoted.includes(f._customId);
+      return !pDelPresets.includes(f.id);
+    });
+
+    // Re-add any everPromoted that might have been removed by "delete for today"
+    // We can't do this here since customFoods aren't loaded yet — handled in loadAll effect
+    return base;
+  });
   const [permDeletedPromoted, setPermDeletedPromoted] = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
   const [everPromoted, setEverPromoted] = useState(() => serverEverPromoted || store.get("vt_ever_promoted", []));
   const [permDeletedPresets, setPermDeletedPresets] = useState(() => serverPermDeletedPresets || store.get("vt_perm_deleted_presets", []));
@@ -654,7 +878,19 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const [log, weight, foods] = await Promise.all([api.getLog(selectedDate), api.getWeight(), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setWtHistory(weight);
-        setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
+        const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
+        setCustomFoods(normalizedFoods);
+
+        // ✅ Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
+        setPresetFoods((prev) => {
+          const currentPromotedIds = new Set(prev.filter((f) => f._promoted).map((f) => f._customId));
+          const missingPromoted = normalizedFoods.filter((cf) => {
+            const cid = String(cf._id || cf.id);
+            return everPromoted.includes(cid) && !permDeletedPromoted.includes(cid) && !currentPromotedIds.has(cid);
+          }).map(customFoodToPreset);
+          if (missingPromoted.length === 0) return prev;
+          return [...prev, ...missingPromoted];
+        });
       } catch (err) { console.error("Load error:", err); } finally { setLoadingData(false); }
     }
     loadAll();
@@ -709,17 +945,32 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   function deletePresetFood(id, mode) {
     const food = presetFoods.find((f) => f.id === id);
     if (food?._promoted) {
-      if (mode === "permanent") setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
+      if (mode === "permanent") {
+        // Permanent: add to permDeletedPromoted so it never comes back
+        setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
+      }
+      // "today" mode for promoted: just remove from presetFoods, don't add to any permanent list
+      // It will be restored by resetPresetFoods since _customId stays in everPromoted
     } else {
+      // Built-in preset: track as permanently deleted (both modes remove it the same way)
       if (food) setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
     setPresetFoods((prev) => prev.filter((f) => f.id !== id));
     setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
   }
+
   function resetPresetFoods() {
+    // Restore all built-in presets (except permanently deleted ones)
     const restoredBuiltins = FOODS.filter((f) => !permDeletedPresets.includes(f.id));
-    const promotedEntries = customFoods.filter((cf) => { const cid = String(cf._id||cf.id); return everPromoted.includes(cid) && !permDeletedPromoted.includes(cid); }).map(customFoodToPreset);
+    // Restore all ever-promoted custom foods (except permanently deleted ones)
+    const promotedEntries = customFoods
+      .filter((cf) => {
+        const cid = String(cf._id || cf.id);
+        return everPromoted.includes(cid) && !permDeletedPromoted.includes(cid);
+      })
+      .map(customFoodToPreset);
     setPresetFoods([...restoredBuiltins, ...promotedEntries]);
+    // Only clear permDeletedPresets (built-in "today" deletes), NOT permDeletedPromoted
     setPermDeletedPresets([]);
   }
   async function logWeight() {
@@ -910,215 +1161,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     );
   }
 
-  function WeightPanel() {
-    const [editingId, setEditingId] = useState(null);
-    const [editValue, setEditValue] = useState("");
-    const displayHistory = [...wtHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
-    function getEntryId(e) { return e._id || e.id; }
-    function startEdit(e) { setEditingId(getEntryId(e)); setEditValue(String(e.value)); }
-    async function saveEdit(e) {
-      const v = parseFloat(editValue); const id = getEntryId(e); if (!v||v<=0||!id) { setEditingId(null); return; }
-      setEditingId(null); setWtHistory((prev) => prev.map((x) => getEntryId(x)===id ? { ...x, value: v } : x));
-      try { await api.updateWeight(id, v); } catch (err) { console.error(err); setWtHistory((prev) => prev.map((x) => getEntryId(x)===id ? { ...x, value: e.value } : x)); }
-    }
-    async function deleteEntry(e) {
-      const id = getEntryId(e); if (!id) return;
-      setWtHistory((prev) => prev.filter((x) => getEntryId(x) !== id));
-      try { await api.deleteWeight(id); } catch (err) { console.error(err); setWtHistory((prev) => { const n = [...prev, e]; n.sort((a,b) => a.date.localeCompare(b.date)); return n; }); }
-      if (editingId === id) setEditingId(null);
-    }
-
-    // ── Weight Chart (Chart.js canvas) ──
-    const canvasRef = useRef(null);
-    const chartRef  = useRef(null);
-    useEffect(() => {
-      if (!canvasRef.current) return;
-      if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
-      if (!wtHistory.length || !window.Chart) return;
-      const gridColor = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
-      const textColor = dark ? "#6B6358" : "#9A9386";
-      chartRef.current = new window.Chart(canvasRef.current.getContext("2d"), {
-        type: "line",
-        data: {
-          labels: wtHistory.map((h) => h.displayDate || h.date),
-          datasets: [{ data: wtHistory.map((h) => h.value), borderColor: "#D4582A", backgroundColor: "rgba(212,88,42,.08)", borderWidth: 2, pointBackgroundColor: "#D4582A", pointBorderColor: dark ? "#1F1D19" : "#fff", pointBorderWidth: 2, pointRadius: 5, tension: 0.4, fill: true }],
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + "kg" } } },
-          scales: {
-            x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 } } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 }, callback: (v) => v + "kg" } },
-          },
-        },
-      });
-      return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
-    }, [wtHistory, dark]);
-
-    return (
-      <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        <Card title="Log Weight" icon="⚖️">
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            <input value={wtInput} onChange={(e) => setWtInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && logWeight()} placeholder="Weight in kg" type="number" step="0.1" style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
-            <button onClick={logWeight} style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Log</button>
-          </div>
-          {wtHistory.length === 0
-            ? <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No weight entries yet</div>
-            : <canvas ref={canvasRef} height={160} style={{ width: "100%" }} />
-          }
-          {pred && <div style={{ background: "var(--greenBg)", border: "1px solid var(--green)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--green)", fontWeight: 600, marginTop: 10, display: "flex", alignItems: "center", gap: 7 }}>🎯 {pred}</div>}
-        </Card>
-
-        <Card title="Weight History" icon="📅">
-          {wtHistory.length === 0 ? <div style={{ textAlign: "center", color: "var(--text3)", padding: "20px 0", fontSize: 13 }}>No entries yet</div> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {displayHistory.map((h) => {
-                const hId = String(getEntryId(h)); const isEditing = editingId === hId;
-                return (
-                  <div key={hId||h.date} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: isEditing ? "var(--accentBg)" : "var(--surface2)", borderRadius: 10, border: isEditing ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 12, color: "var(--text3)", flex: 1 }}>{h.displayDate || h.date}</span>
-                    {isEditing
-                      ? <input autoFocus type="number" step="0.1" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => { if (e.key==="Enter") saveEdit(h); if (e.key==="Escape") setEditingId(null); }} style={{ width: 72, background: "var(--surface)", border: "1px solid var(--accent)", borderRadius: 7, padding: "4px 8px", fontSize: 14, fontWeight: 700, color: "var(--accent)", fontFamily: "'DM Sans',sans-serif", outline: "none", textAlign: "right" }} />
-                      : <span style={{ fontSize: 14, fontWeight: 700, color: "var(--accent)", minWidth: 56, textAlign: "right" }}>{h.value} kg</span>
-                    }
-                    {isEditing ? <>
-                      <button onClick={() => saveEdit(h)} style={{ background: "var(--green)", border: "none", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg viewBox="0 0 10 8" width="11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg></button>
-                      <button onClick={() => setEditingId(null)} style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, color: "var(--text3)" }}>✕</button>
-                    </> : <>
-                      <button onClick={() => startEdit(h)} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>✏️</button>
-                      <button onClick={() => deleteEntry(h)} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 7, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>🗑</button>
-                    </>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      </div>
-    );
-  }
-
-  function HealthPanel() {
-    const [localSteps, setLocalSteps] = useState(steps);
-    const [stepsHistory, setStepsHistory] = useState(() => store.get("vt_steps_history", []));
-    const [waterHistory, setWaterHistory] = useState(() => store.get("vt_water_history", []));
-
-    useEffect(() => { setLocalSteps(steps); }, []);
-
-    // persist steps history
-    useEffect(() => {
-      if (!steps) return;
-      const today = todayStr();
-      setStepsHistory((prev) => {
-        const filtered = prev.filter((e) => e.date !== today);
-        const next = [...filtered, { date: today, value: Number(steps) }].sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
-        store.set("vt_steps_history", next);
-        return next;
-      });
-    }, [steps]);
-
-    // persist water history
-    useEffect(() => {
-      const today = todayStr();
-      setWaterHistory((prev) => {
-        const filtered = prev.filter((e) => e.date !== today);
-        const next = [...filtered, { date: today, value: water }].sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
-        store.set("vt_water_history", next);
-        return next;
-      });
-    }, [water]);
-
-    // BMI
-    const heightCm = parseFloat(userProfile?.height);
-    const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
-    const bmi = heightCm > 0 && latestWeight ? (latestWeight / (heightCm / 100) ** 2).toFixed(1) : null;
-    const waterLitres = (water * 0.25).toFixed(2);
-
-    // Mini line chart helper (uses Chart.js)
-    function MiniLineChart({ history, color, unit, yCallback, height = 130 }) {
-      const cRef = useRef(null); const chRef = useRef(null);
-      useEffect(() => {
-        if (!cRef.current) return;
-        if (chRef.current) { chRef.current.destroy(); chRef.current = null; }
-        if (!history.length || !window.Chart) return;
-        const gridColor = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
-        const textColor = dark ? "#6B6358" : "#9A9386";
-        chRef.current = new window.Chart(cRef.current.getContext("2d"), {
-          type: "line",
-          data: { labels: history.map((h) => h.date), datasets: [{ data: history.map((h) => h.value), borderColor: color, backgroundColor: color + "14", borderWidth: 2, pointBackgroundColor: color, pointBorderColor: dark ? "#1F1D19" : "#fff", pointBorderWidth: 2, pointRadius: 4, tension: 0.4, fill: true }] },
-          options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + unit } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 10 }, maxTicksLimit: 7 } }, y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 10 }, callback: yCallback || ((v) => v + unit) } } } },
-        });
-        return () => { if (chRef.current) { chRef.current.destroy(); chRef.current = null; } };
-      }, [history, color, unit]);
-      if (!history.length) return null;
-      return <canvas ref={cRef} height={height} style={{ width: "100%" }} />;
-    }
-
-    return (
-      <div style={{ display: desktop ? "grid" : "block", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        <div>
-          <Card title="Today's Tip" icon="✨">
-            <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 12, padding: 16, fontSize: 14, color: "var(--accent)", fontWeight: 600, lineHeight: 1.6 }}>{HEALTH_TIPS[tipIdx]}</div>
-          </Card>
-
-          <Card title="Hydration Tracker" icon="💧">
-            <div style={{ textAlign: "center", marginBottom: 12 }}>
-              <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue,#2563EB)" }}>{water}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today · <span style={{ color: "var(--blue,#2563EB)", fontWeight: 600 }}>{waterLitres} L</span> · goal: 15 gl (3.75 L)</div>
-              <ProgBar val={water} max={15} color="#2563EB" />
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: waterHistory.length > 1 ? 16 : 0 }}>
-              <button onClick={() => handleWater(Math.max(0, water-1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
-              <button onClick={() => handleWater(Math.min(25, water+1))} style={{ background: "#2563EB", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "#fff" }}>+ Glass</button>
-            </div>
-            {waterHistory.length > 1 && <>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Water History</div>
-              <MiniLineChart history={waterHistory.slice(-14)} color="#2563EB" unit=" gl" />
-            </>}
-          </Card>
-
-          <WeeklySummaryCard targets={TARGETS} />
-        </div>
-
-        <div>
-          {bmi !== null && (
-            <Card title="BMI Estimate" icon="📊">
-              <div style={{ textAlign: "center", padding: "8px 0" }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: parseFloat(bmi) < 18.5 ? "var(--blue,#2563EB)" : parseFloat(bmi) < 25 ? "var(--green)" : "var(--amber)" }}>{bmi}</div>
-                <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
-                  {parseFloat(bmi) < 18.5 ? "Underweight" : parseFloat(bmi) < 25 ? "Normal weight ✓" : parseFloat(bmi) < 30 ? "Overweight" : "Obese"}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>Based on latest weight · {heightCm}cm height</div>
-              </div>
-            </Card>
-          )}
-
-          <Card title="Steps Tracker" icon="🚶">
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <input type="number" value={localSteps} placeholder="Enter steps today" onChange={(e) => { setLocalSteps(e.target.value); handleSteps(e.target.value); }} style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
-            </div>
-            {localSteps > 0 && <div style={{ marginBottom: stepsHistory.length > 1 ? 12 : 0 }}>
-              <ProgBar val={parseInt(localSteps)} max={10000} color="var(--green)" />
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>{parseInt(localSteps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>≈ {Math.round(parseInt(localSteps) * 0.04)} kcal burned</div>
-            </div>}
-            {stepsHistory.length > 1 && <>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6, marginTop: localSteps > 0 ? 0 : 4 }}>Step History</div>
-              <MiniLineChart history={stepsHistory.slice(-14)} color="#2D7A5C" unit=" steps" yCallback={(v) => v >= 1000 ? (v/1000).toFixed(1)+"k" : v} />
-            </>}
-          </Card>
-
-          <Card title="All Health Tips" icon="📋" defaultOpen={false}>
-            {HEALTH_TIPS.map((tip, i) => (
-              <div key={i} style={{ fontSize: 13, color: "var(--text2)", padding: "8px 0", borderBottom: i < HEALTH_TIPS.length - 1 ? "1px solid var(--border)" : "none" }}>{tip}</div>
-            ))}
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const panels = { tracker: <TrackerPanel />, weight: <WeightPanel />, health: <HealthPanel /> };
+  const panels = {
+    tracker: <TrackerPanel />,
+    weight: <WeightPanel wtInput={wtInput} setWtInput={setWtInput} logWeight={logWeight} wtHistory={wtHistory} setWtHistory={setWtHistory} dark={dark} pred={pred} desktop={desktop} />,
+    health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} />,
+  };
 
   function Sidebar() {
     return (
