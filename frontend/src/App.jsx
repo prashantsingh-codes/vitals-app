@@ -904,7 +904,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
       } catch (err) { console.error("Poll error:", err); }
-    }, 30000);
+    }, 60000);
     return () => clearInterval(interval);
   }, [selectedDate, isToday]);
 
