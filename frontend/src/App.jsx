@@ -617,10 +617,10 @@ function WeightPanel({ wtInput, setWtInput, logWeight, wtHistory, setWtHistory, 
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + "kg" } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => parseFloat(c.parsed.y).toFixed(2).replace(/\.?0+$/, "") + "kg" } } },
         scales: {
           x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 } } },
-          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 }, callback: (v) => v + "kg" } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "DM Sans", size: 11 }, callback: (v) => parseFloat(v).toFixed(2).replace(/\.?0+$/, "") + "kg" } },
         },
       },
     });
@@ -1043,9 +1043,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                     <ProgBar val={p.val} max={p.max} color={p.color} />
                   </div>
                 ))}
-              </div>
-              <div style={{ marginTop: 12, fontSize: 12, color: "var(--text2)", background: "var(--surface2)", borderRadius: 8, padding: "8px 12px" }}>
-                💡 {getSuggestion()}
               </div>
             </div>
             <div style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 13, color: "var(--accent)", fontWeight: 500, fontStyle: "italic", lineHeight: 1.5, display: "flex", gap: 10 }}>
