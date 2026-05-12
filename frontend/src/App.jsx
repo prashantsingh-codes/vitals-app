@@ -691,7 +691,7 @@ function MiniLineChart({ history, dark, color, unit, yCallback }) {
 }
 
 // ─── HealthPanel ──────────────────────────────────────────────────────────────
-function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userProfile, targets, dark, desktop, tipIdx }) {
+function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userProfile, targets, dark, desktop, tipIdx, isToday }) {
   const [localSteps, setLocalSteps] = useState(steps);
   const [stepsHistory, setStepsHistory] = useState(() => store.get("vt_steps_history", []));
   const [waterHistory, setWaterHistory] = useState(() => store.get("vt_water_history", []));
@@ -699,7 +699,7 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
   useEffect(() => { setLocalSteps(steps); }, [steps]);
 
   useEffect(() => {
-    if (!steps) return;
+    if (!steps || !isToday) return;
     const today = todayStr();
     setStepsHistory((prev) => {
       const filtered = prev.filter((e) => e.date !== today);
@@ -707,9 +707,10 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
       store.set("vt_steps_history", next);
       return next;
     });
-  }, [steps]);
+  }, [steps, isToday]);
 
   useEffect(() => {
+    if (!isToday) return;
     const today = todayStr();
     setWaterHistory((prev) => {
       const filtered = prev.filter((e) => e.date !== today);
@@ -717,7 +718,7 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
       store.set("vt_water_history", next);
       return next;
     });
-  }, [water]);
+  }, [water, isToday]);
 
   const heightCm = parseFloat(userProfile?.height);
   const latestWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
@@ -1172,7 +1173,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const panels = {
     tracker: <TrackerPanel />,
     weight: <WeightPanel wtInput={wtInput} setWtInput={setWtInput} logWeight={logWeight} wtHistory={wtHistory} setWtHistory={setWtHistory} dark={dark} pred={pred} desktop={desktop} />,
-    health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} />,
+    health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} isToday={isToday} />,
   };
 
   function Sidebar() {
