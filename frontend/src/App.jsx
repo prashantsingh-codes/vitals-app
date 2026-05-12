@@ -853,16 +853,27 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 
   useEffect(() => {
     async function checkMidnightReset() {
-      const lastDate = localStorage.getItem("vt_log_date"), today = todayStr();
+      const lastDate = localStorage.getItem("vt_log_date");
+      const today = todayStr();
+      // Only reset if we have a stored date AND it's a different day
       if (lastDate && lastDate !== today) {
         midnightResetInProgress.current = true;
-        setItems({}); setWholeEggs(0); setEggWhites(0); setWater(0); setSteps("");
+        // Reset local UI state for the new day
+        setItems({});
+        setWholeEggs(0);
+        setEggWhites(0);
+        setWater(0);
+        setSteps("");
+        // Untoggle all custom foods for the new day
         setCustomFoods((prev) => {
           const toUntoggle = prev.filter((f) => f.checked);
-          Promise.all(toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))).finally(() => { midnightResetInProgress.current = false; });
+          Promise.all(
+            toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
+          ).finally(() => { midnightResetInProgress.current = false; });
           return prev.map((f) => ({ ...f, checked: false }));
         });
-        await api.saveLog({ items: {}, wholeEggs: 0, eggWhites: 0, water: 0, steps: "" }).catch(console.error);
+        // Do NOT overwrite any server data — today's log simply doesn't exist yet
+        // which is correct. Writing an empty log here risks race conditions.
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -904,7 +915,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
       } catch (err) { console.error("Poll error:", err); }
-    }, 60000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [selectedDate, isToday]);
 
