@@ -797,23 +797,16 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [wholeEggs, setWholeEggs] = useState(0);
   const [eggWhites, setEggWhites] = useState(0);
   const [customFoods, setCustomFoods] = useState([]);
-  // ✅ Always rebuild presetFoods from everPromoted + permDeletedPromoted + permDeletedPresets
-  // Never blindly trust the saved presetFoods array, which may be missing "deleted for today" promoted foods
   const [presetFoods, setPresetFoods] = useState(() => {
     const pDelPromoted = serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []);
     const pDelPresets  = serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []);
-    const ePromoted    = serverEverPromoted         || store.get("vt_ever_promoted",          []);
     const savedFoods   = serverPresetFoods?.length > 0 ? serverPresetFoods : (store.get("vt_preset_foods", null) || FOODS);
 
-    // Start with saved preset foods as base (for ordering / custom data)
-    // Then ensure all everPromoted foods that aren't permDeletedPromoted are included
     const base = savedFoods.filter((f) => {
       if (f._promoted) return !pDelPromoted.includes(f._customId);
       return !pDelPresets.includes(f.id);
     });
 
-    // Re-add any everPromoted that might have been removed by "delete for today"
-    // We can't do this here since customFoods aren't loaded yet — handled in loadAll effect
     return base;
   });
   const [permDeletedPromoted, setPermDeletedPromoted] = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
@@ -837,6 +830,16 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const modalOpenRef = useRef(false);
   const isToday = selectedDate === todayStr();
 
+  // ─── FIX 1: Ref that always holds the latest customFoods without stale closure ───
+  const customFoodsRef = useRef(customFoods);
+  useEffect(() => { customFoodsRef.current = customFoods; }, [customFoods]);
+
+  // ─── FIX 2: Ref that always holds latest everPromoted / permDeletedPromoted ───
+  const everPromotedRef = useRef(everPromoted);
+  useEffect(() => { everPromotedRef.current = everPromoted; }, [everPromoted]);
+  const permDeletedPromotedRef = useRef(permDeletedPromoted);
+  useEffect(() => { permDeletedPromotedRef.current = permDeletedPromoted; }, [permDeletedPromoted]);
+
   const macros = calcMacros(items, wholeEggs, eggWhites, customFoods, presetFoods);
   const rCal = TARGETS.cal - macros.cal, rPro = TARGETS.pro - macros.pro, rFat = TARGETS.fat - macros.fat;
 
@@ -852,29 +855,31 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     }, 1000);
   }, [presetFoods, permDeletedPromoted, everPromoted, permDeletedPresets]);
 
+  // ─── FIX 1 (midnight reset): Use ref to read customFoods synchronously, await all toggles ───
   useEffect(() => {
     async function checkMidnightReset() {
       const lastDate = localStorage.getItem("vt_log_date");
       const today = todayStr();
-      // Only reset if we have a stored date AND it's a different day
       if (lastDate && lastDate !== today) {
         midnightResetInProgress.current = true;
-        // Reset local UI state for the new day
         setItems({});
         setWholeEggs(0);
         setEggWhites(0);
         setWater(0);
         setSteps("");
-        // Untoggle all custom foods for the new day
-        setCustomFoods((prev) => {
-          const toUntoggle = prev.filter((f) => f.checked);
-          Promise.all(
+
+        // Use the ref to get fresh customFoods synchronously — avoids stale closure
+        const toUntoggle = customFoodsRef.current.filter((f) => f.checked);
+        // Optimistically clear checked state in UI immediately
+        setCustomFoods((prev) => prev.map((f) => ({ ...f, checked: false })));
+        // Persist all toggles to server, then clear the reset lock
+        try {
+          await Promise.all(
             toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
-          ).finally(() => { midnightResetInProgress.current = false; });
-          return prev.map((f) => ({ ...f, checked: false }));
-        });
-        // Do NOT overwrite any server data — today's log simply doesn't exist yet
-        // which is correct. Writing an empty log here risks race conditions.
+          );
+        } finally {
+          midnightResetInProgress.current = false;
+        }
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -893,12 +898,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
         setCustomFoods(normalizedFoods);
 
-        // ✅ Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
+        // Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
         setPresetFoods((prev) => {
           const currentPromotedIds = new Set(prev.filter((f) => f._promoted).map((f) => f._customId));
           const missingPromoted = normalizedFoods.filter((cf) => {
             const cid = String(cf._id || cf.id);
-            return everPromoted.includes(cid) && !permDeletedPromoted.includes(cid) && !currentPromotedIds.has(cid);
+            return everPromotedRef.current.includes(cid) && !permDeletedPromotedRef.current.includes(cid) && !currentPromotedIds.has(cid);
           }).map(customFoodToPreset);
           if (missingPromoted.length === 0) return prev;
           return [...prev, ...missingPromoted];
@@ -958,33 +963,34 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     const food = presetFoods.find((f) => f.id === id);
     if (food?._promoted) {
       if (mode === "permanent") {
-        // Permanent: add to permDeletedPromoted so it never comes back
         setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
       }
-      // "today" mode for promoted: just remove from presetFoods, don't add to any permanent list
-      // It will be restored by resetPresetFoods since _customId stays in everPromoted
+      // "today" mode: just remove from presetFoods — restore via resetPresetFoods uses everPromoted
     } else {
-      // Built-in preset: track as permanently deleted (both modes remove it the same way)
       if (food) setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
     setPresetFoods((prev) => prev.filter((f) => f.id !== id));
     setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
   }
 
+  // ─── FIX 2: Use customFoodsRef to avoid stale closure in resetPresetFoods ───
   function resetPresetFoods() {
-    // Restore all built-in presets (except permanently deleted ones)
+    // Restore all built-in presets except those permanently deleted
     const restoredBuiltins = FOODS.filter((f) => !permDeletedPresets.includes(f.id));
-    // Restore all ever-promoted custom foods (except permanently deleted ones)
-    const promotedEntries = customFoods
+
+    // Use the ref so we always get the current customFoods list, not a stale snapshot
+    const promotedEntries = customFoodsRef.current
       .filter((cf) => {
         const cid = String(cf._id || cf.id);
-        return everPromoted.includes(cid) && !permDeletedPromoted.includes(cid);
+        return everPromotedRef.current.includes(cid) && !permDeletedPromotedRef.current.includes(cid);
       })
       .map(customFoodToPreset);
+
     setPresetFoods([...restoredBuiltins, ...promotedEntries]);
     // Only clear permDeletedPresets (built-in "today" deletes), NOT permDeletedPromoted
     setPermDeletedPresets([]);
   }
+
   async function logWeight() {
     const v = parseFloat(wtInput); if (!v) return;
     try {
