@@ -855,24 +855,60 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     }, 1000);
   }, [presetFoods, permDeletedPromoted, everPromoted, permDeletedPresets]);
 
-  // ─── FIX 1 (midnight reset): Use ref to read customFoods synchronously, await all toggles ───
+  // ─── Refs to always read current items/eggs/water/steps without stale closures ───
+  const itemsRef      = useRef(items);
+  const wholeEggsRef  = useRef(wholeEggs);
+  const eggWhitesRef  = useRef(eggWhites);
+  const waterRef      = useRef(water);
+  const stepsRef      = useRef(steps);
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => { itemsRef.current     = items;        }, [items]);
+  useEffect(() => { wholeEggsRef.current = wholeEggs;    }, [wholeEggs]);
+  useEffect(() => { eggWhitesRef.current = eggWhites;    }, [eggWhites]);
+  useEffect(() => { waterRef.current     = water;        }, [water]);
+  useEffect(() => { stepsRef.current     = steps;        }, [steps]);
+  useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
+
+  // ─── Midnight reset ───────────────────────────────────────────────────────
   useEffect(() => {
     async function checkMidnightReset() {
       const lastDate = localStorage.getItem("vt_log_date");
       const today = todayStr();
       if (lastDate && lastDate !== today) {
         midnightResetInProgress.current = true;
+
+        // STEP 1: Flush any pending debounced save for the OLD date FIRST.
+        // If a save was queued just before midnight, cancel it and immediately
+        // flush the current in-memory state to the server for yesterday's date.
+        // This ensures yesterday's log is never lost.
+        if (syncTimer.current) {
+          clearTimeout(syncTimer.current);
+          syncTimer.current = null;
+          setSyncing(false);
+          // Flush current state to yesterday's date before we zero it
+          try {
+            await api.saveLog({
+              date:      lastDate,
+              items:     itemsRef.current,
+              wholeEggs: wholeEggsRef.current,
+              eggWhites: eggWhitesRef.current,
+              water:     waterRef.current,
+              steps:     stepsRef.current,
+            });
+          } catch (e) { console.error("Midnight flush error:", e); }
+        }
+
+        // STEP 2: Zero out UI state for the new day (fresh slate).
         setItems({});
         setWholeEggs(0);
         setEggWhites(0);
         setWater(0);
         setSteps("");
 
-        // Use the ref to get fresh customFoods synchronously — avoids stale closure
+        // STEP 3: Untoggle all checked custom foods for the new day.
+        // Use the ref so we read the current list without stale closure issues.
         const toUntoggle = customFoodsRef.current.filter((f) => f.checked);
-        // Optimistically clear checked state in UI immediately
         setCustomFoods((prev) => prev.map((f) => ({ ...f, checked: false })));
-        // Persist all toggles to server, then clear the reset lock
         try {
           await Promise.all(
             toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
@@ -956,7 +992,14 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   function promoteCustomFood(customFood) {
     const customId = String(customFood._id||customFood.id);
     if (presetFoods.some((f) => f._promoted && f._customId===customId)) return;
-    setEverPromoted((prev) => prev.includes(customId) ? prev : [...prev, customId]);
+    // ✅ BUG 2 FIX: Store full food snapshot (not just ID) so resetPresetFoods
+    // works without needing customFoodsRef (which may be stale or empty).
+    const snapshot = { id: customId, name: customFood.name, cal: Number(customFood.cal)||0, pro: Number(customFood.pro)||0, fat: Number(customFood.fat)||0 };
+    setEverPromoted((prev) => {
+      const alreadyTracked = prev.some((e) => (typeof e === "string" ? e : e.id) === customId);
+      if (alreadyTracked) return prev;
+      return [...prev, snapshot];
+    });
     setPresetFoods((prev) => [...prev, customFoodToPreset(customFood)]);
   }
   function deletePresetFood(id, mode) {
@@ -973,21 +1016,47 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
   }
 
-  // ─── FIX 2: Use customFoodsRef to avoid stale closure in resetPresetFoods ───
+  // ─── resetPresetFoods ────────────────────────────────────────────────────────
   function resetPresetFoods() {
     // Restore all built-in presets except those permanently deleted
     const restoredBuiltins = FOODS.filter((f) => !permDeletedPresets.includes(f.id));
 
-    // Use the ref so we always get the current customFoods list, not a stale snapshot
-    const promotedEntries = customFoodsRef.current
-      .filter((cf) => {
-        const cid = String(cf._id || cf.id);
-        return everPromotedRef.current.includes(cid) && !permDeletedPromotedRef.current.includes(cid);
+    // Re-add all ever-promoted custom foods that haven't been permanently deleted.
+    // everPromoted may contain plain string IDs (legacy) or full snapshots.
+    // For both, prefer the live customFoodsRef data; fall back to snapshot if available.
+    const currentPermDeleted = permDeletedPromotedRef.current;
+    const freshFoods = customFoodsRef.current;
+
+    const promotedEntries = everPromotedRef.current
+      .filter((entry) => {
+        const cid = typeof entry === "string" ? entry : entry.id;
+        return !currentPermDeleted.includes(cid);
       })
-      .map(customFoodToPreset);
+      .map((entry) => {
+        const cid = typeof entry === "string" ? entry : entry.id;
+        // Always prefer the live customFood (freshest data)
+        const liveCf = freshFoods.find((f) => String(f._id || f.id) === cid);
+        if (liveCf) return customFoodToPreset(liveCf);
+        // Fall back to stored snapshot (new format)
+        if (typeof entry === "object" && entry.name) {
+          return {
+            id: "promoted_" + entry.id,
+            _promoted: true,
+            _customId: entry.id,
+            label: entry.name,
+            cal: entry.cal,
+            pro: entry.pro,
+            fat: entry.fat,
+            section: "My Foods",
+          };
+        }
+        // Legacy plain string with no matching live food — skip
+        return null;
+      })
+      .filter(Boolean);
 
     setPresetFoods([...restoredBuiltins, ...promotedEntries]);
-    // Only clear permDeletedPresets (built-in "today" deletes), NOT permDeletedPromoted
+    // Clear only built-in "today" deletes, NOT permDeletedPromoted
     setPermDeletedPresets([]);
   }
 
