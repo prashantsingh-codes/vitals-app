@@ -20,9 +20,11 @@ async function request(method, path, body) {
 
 export const api = {
   // Auth
-  signup: (name, email, password) => request("POST", "/api/auth/signup", { name, email, password }),
-  login:  (email, password)       => request("POST", "/api/auth/login",  { email, password }),
-  me:     ()                      => request("GET",  "/api/auth/me"),
+  signup:         (name, email, password) => request("POST", "/api/auth/signup",          { name, email, password }),
+  login:          (email, password)       => request("POST", "/api/auth/login",            { email, password }),
+  me:             ()                      => request("GET",  "/api/auth/me"),
+  forgotPassword: (email)                 => request("POST", "/api/auth/forgot-password",  { email }),
+  resetPassword:  (token, password)       => request("POST", "/api/auth/reset-password",   { token, password }),
 
   // Daily log
   getLog:    (date) => request("GET",  `/api/log${date ? `?date=${date}` : ""}`),
