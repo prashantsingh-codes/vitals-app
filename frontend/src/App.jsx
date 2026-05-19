@@ -932,7 +932,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setWtHistory(weight);
         const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
-        setCustomFoods(normalizedFoods);
+        // Don't overwrite customFoods during midnight reset — the reset is actively
+        // toggling foods to unchecked on the server; loading now would restore the
+        // old checked state from DB before those API calls complete.
+        if (!midnightResetInProgress.current) {
+          setCustomFoods(normalizedFoods);
+        }
 
         // Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
         setPresetFoods((prev) => {
