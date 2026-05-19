@@ -956,7 +956,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (modalOpenRef.current || !isToday || midnightResetInProgress.current) return;
+      if (modalOpenRef.current || !isToday || midnightResetInProgress.current || syncTimer.current) return;
       try {
         const [log, foods] = await Promise.all([api.getLog(selectedDate), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
