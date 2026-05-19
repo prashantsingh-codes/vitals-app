@@ -910,9 +910,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const toUntoggle = customFoodsRef.current.filter((f) => f.checked);
         setCustomFoods((prev) => prev.map((f) => ({ ...f, checked: false })));
         try {
-          await Promise.all(
-            toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
-          );
+          await Promise.all([
+            // Uncheck on the food documents (today's current state)
+            ...toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error)),
+            // Also clear customFoodChecked in today's log so polling doesn't restore old state
+            api.saveLog({ date: todayStr(), customFoodChecked: {} }).catch(console.error),
+          ]);
         } finally {
           midnightResetInProgress.current = false;
         }
@@ -931,10 +934,21 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const [log, weight, foods] = await Promise.all([api.getLog(selectedDate), api.getWeight(), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setWtHistory(weight);
-        const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
-        // Don't overwrite customFoods during midnight reset — the reset is actively
-        // toggling foods to unchecked on the server; loading now would restore the
-        // old checked state from DB before those API calls complete.
+        // Restore checked state from the log (per-date) instead of from the
+        // customFood document (which only holds current checked state).
+        // This ensures going back to yesterday shows yesterday's checked foods.
+        const checkedForDate = log.customFoodChecked || {};
+        const normalizedFoods = foods.map((f) => {
+          const id = String(f._id || f.id);
+          const checkedInLog = checkedForDate[id];
+          return {
+            ...f,
+            id,
+            _id: id,
+            // If the log has an entry for this food use it, otherwise fall back to DB value
+            checked: checkedInLog !== undefined ? checkedInLog : f.checked,
+          };
+        });
         if (!midnightResetInProgress.current) {
           setCustomFoods(normalizedFoods);
         }
@@ -956,11 +970,16 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (modalOpenRef.current || !isToday || midnightResetInProgress.current || syncTimer.current) return;
+      if (modalOpenRef.current || !isToday || midnightResetInProgress.current) return;
       try {
         const [log, foods] = await Promise.all([api.getLog(selectedDate), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
-        setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
+        const checkedForDate = log.customFoodChecked || {};
+        setCustomFoods(foods.map((f) => {
+          const id = String(f._id || f.id);
+          const checkedInLog = checkedForDate[id];
+          return { ...f, id, _id: id, checked: checkedInLog !== undefined ? checkedInLog : f.checked };
+        }));
       } catch (err) { console.error("Poll error:", err); }
     }, 30000);
     return () => clearInterval(interval);
@@ -987,7 +1006,18 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     try { const saved = await api.addCustomFood(food); const n = { ...saved, id: String(saved._id||saved.id), _id: String(saved._id||saved.id) }; setCustomFoods((prev) => [n, ...prev]); } catch (err) { console.error(err); }
   }
   async function toggleCustomFood(id) {
-    setCustomFoods((prev) => { const next = prev.map((f) => String(f.id)===String(id) ? { ...f, checked: !f.checked } : f); const food = next.find((f) => String(f.id)===String(id)); if (food) api.toggleCustomFood(id, food.checked).catch(console.error); return next; });
+    setCustomFoods((prev) => {
+      const next = prev.map((f) => String(f.id) === String(id) ? { ...f, checked: !f.checked } : f);
+      const food = next.find((f) => String(f.id) === String(id));
+      if (food) {
+        // Persist checked state on the food document (for today's current state)
+        api.toggleCustomFood(id, food.checked).catch(console.error);
+        // Also save checked state into the daily log so past dates restore correctly
+        const customFoodChecked = Object.fromEntries(next.map((f) => [f.id, f.checked]));
+        scheduleSave({ customFoodChecked });
+      }
+      return next;
+    });
   }
   async function deleteCustomFood(id) {
     setCustomFoods((prev) => prev.filter((f) => String(f.id)!==String(id)));
