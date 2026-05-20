@@ -320,13 +320,19 @@ function FoodChip({ food, count, onCountChange, onDelete }) {
       <div style={{ background: "var(--amberBg)", border: "1px solid var(--amber)", borderRadius: 10, padding: "10px 12px" }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--amber)", marginBottom: 8 }}>Remove "{label}" from presets?</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <button onClick={() => { onDelete("permanent"); setConfirmDelete(false); }} style={{ background: "var(--accent)", border: "none", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-            🗑 Delete permanently
-            <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.85, marginTop: 1 }}>Won't return on "Restore presets" · stays in Custom Foods</div>
+          <button onClick={() => { onDelete("permanent"); setConfirmDelete(false); }} style={{ background: "var(--accent)", border: "none", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <span style={{ fontSize: 14, lineHeight: 1.4, flexShrink: 0 }}>✕</span>
+            <div>
+              Delete permanently
+              <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.85, marginTop: 1 }}>Won't return on "Restore presets" · stays in Custom Foods</div>
+            </div>
           </button>
-          <button onClick={() => { onDelete("today"); setConfirmDelete(false); }} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 700, color: "var(--text)", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-            📅 Delete for today
-            <div style={{ fontSize: 10, fontWeight: 400, color: "var(--text3)", marginTop: 1 }}>Returns when you "Restore presets" · stays in Custom Foods</div>
+          <button onClick={() => { onDelete("today"); setConfirmDelete(false); }} style={{ background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 700, color: "var(--text)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <span style={{ fontSize: 14, lineHeight: 1.4, flexShrink: 0 }}>↩</span>
+            <div>
+              Delete temporarily
+              <div style={{ fontSize: 10, fontWeight: 400, color: "var(--text3)", marginTop: 1 }}>Returns when you "Restore presets" · stays in Custom Foods</div>
+            </div>
           </button>
           <button onClick={() => setConfirmDelete(false)} style={{ background: "none", border: "none", fontSize: 11, color: "var(--text3)", cursor: "pointer", fontFamily: "inherit", padding: "4px 0" }}>Cancel</button>
         </div>
@@ -910,12 +916,9 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const toUntoggle = customFoodsRef.current.filter((f) => f.checked);
         setCustomFoods((prev) => prev.map((f) => ({ ...f, checked: false })));
         try {
-          await Promise.all([
-            // Uncheck on the food documents (today's current state)
-            ...toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error)),
-            // Also clear customFoodChecked in today's log so polling doesn't restore old state
-            api.saveLog({ date: todayStr(), customFoodChecked: {} }).catch(console.error),
-          ]);
+          await Promise.all(
+            toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
+          );
         } finally {
           midnightResetInProgress.current = false;
         }
@@ -934,24 +937,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const [log, weight, foods] = await Promise.all([api.getLog(selectedDate), api.getWeight(), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setWtHistory(weight);
-        // Restore checked state from the log (per-date) instead of from the
-        // customFood document (which only holds current checked state).
-        // This ensures going back to yesterday shows yesterday's checked foods.
-        const checkedForDate = log.customFoodChecked || {};
-        const normalizedFoods = foods.map((f) => {
-          const id = String(f._id || f.id);
-          const checkedInLog = checkedForDate[id];
-          return {
-            ...f,
-            id,
-            _id: id,
-            // If the log has an entry for this food use it, otherwise fall back to DB value
-            checked: checkedInLog !== undefined ? checkedInLog : f.checked,
-          };
-        });
-        if (!midnightResetInProgress.current) {
-          setCustomFoods(normalizedFoods);
-        }
+        const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
+        setCustomFoods(normalizedFoods);
 
         // Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
         setPresetFoods((prev) => {
@@ -974,12 +961,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
       try {
         const [log, foods] = await Promise.all([api.getLog(selectedDate), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
-        const checkedForDate = log.customFoodChecked || {};
-        setCustomFoods(foods.map((f) => {
-          const id = String(f._id || f.id);
-          const checkedInLog = checkedForDate[id];
-          return { ...f, id, _id: id, checked: checkedInLog !== undefined ? checkedInLog : f.checked };
-        }));
+        setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
       } catch (err) { console.error("Poll error:", err); }
     }, 30000);
     return () => clearInterval(interval);
@@ -1006,18 +988,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     try { const saved = await api.addCustomFood(food); const n = { ...saved, id: String(saved._id||saved.id), _id: String(saved._id||saved.id) }; setCustomFoods((prev) => [n, ...prev]); } catch (err) { console.error(err); }
   }
   async function toggleCustomFood(id) {
-    setCustomFoods((prev) => {
-      const next = prev.map((f) => String(f.id) === String(id) ? { ...f, checked: !f.checked } : f);
-      const food = next.find((f) => String(f.id) === String(id));
-      if (food) {
-        // Persist checked state on the food document (for today's current state)
-        api.toggleCustomFood(id, food.checked).catch(console.error);
-        // Also save checked state into the daily log so past dates restore correctly
-        const customFoodChecked = Object.fromEntries(next.map((f) => [f.id, f.checked]));
-        scheduleSave({ customFoodChecked });
-      }
-      return next;
-    });
+    setCustomFoods((prev) => { const next = prev.map((f) => String(f.id)===String(id) ? { ...f, checked: !f.checked } : f); const food = next.find((f) => String(f.id)===String(id)); if (food) api.toggleCustomFood(id, food.checked).catch(console.error); return next; });
   }
   async function deleteCustomFood(id) {
     setCustomFoods((prev) => prev.filter((f) => String(f.id)!==String(id)));
@@ -1027,23 +998,32 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   function promoteCustomFood(customFood) {
     const customId = String(customFood._id||customFood.id);
     if (presetFoods.some((f) => f._promoted && f._customId===customId)) return;
-    // ✅ BUG 2 FIX: Store full food snapshot (not just ID) so resetPresetFoods
-    // works without needing customFoodsRef (which may be stale or empty).
     const snapshot = { id: customId, name: customFood.name, cal: Number(customFood.cal)||0, pro: Number(customFood.pro)||0, fat: Number(customFood.fat)||0 };
+    // Add to everPromoted so Restore can find it
     setEverPromoted((prev) => {
       const alreadyTracked = prev.some((e) => (typeof e === "string" ? e : e.id) === customId);
       if (alreadyTracked) return prev;
       return [...prev, snapshot];
     });
+    // Clear from permDeletedPromoted — user is explicitly re-pinning,
+    // so a previous "delete permanently" should no longer block restore
+    setPermDeletedPromoted((prev) => prev.filter((cid) => cid !== customId));
     setPresetFoods((prev) => [...prev, customFoodToPreset(customFood)]);
   }
   function deletePresetFood(id, mode) {
     const food = presetFoods.find((f) => f.id === id);
     if (food?._promoted) {
       if (mode === "permanent") {
+        // Add to permDeletedPromoted + remove from everPromoted
+        // so Restore never brings it back — food stays in Custom Foods
         setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
+        setEverPromoted((prev) => prev.filter((entry) => {
+          const cid = typeof entry === "string" ? entry : entry.id;
+          return cid !== food._customId;
+        }));
       }
-      // "today" mode: just remove from presetFoods — restore via resetPresetFoods uses everPromoted
+      // "today" (temporary): just remove from presetFoods
+      // Restore via resetPresetFoods uses everPromoted — stays in Custom Foods
     } else {
       if (food) setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
