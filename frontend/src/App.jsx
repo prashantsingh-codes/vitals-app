@@ -937,7 +937,19 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         const [log, weight, foods] = await Promise.all([api.getLog(selectedDate), api.getWeight(), api.getCustomFoods()]);
         setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
         setWtHistory(weight);
-        const normalizedFoods = foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) }));
+        const logItems = log.items || {};
+        const normalizedFoods = foods.map((f) => {
+          const fid = String(f._id || f.id);
+          const pinnedKey = "promoted_" + fid;
+          const pinnedCount = logItems[pinnedKey];
+          const checkedFromPin = pinnedCount !== undefined ? Number(pinnedCount) > 0 : undefined;
+          return {
+            ...f,
+            id: fid,
+            _id: fid,
+            checked: checkedFromPin !== undefined ? checkedFromPin : f.checked,
+          };
+        });
         setCustomFoods(normalizedFoods);
 
         // Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
@@ -988,7 +1000,25 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     try { const saved = await api.addCustomFood(food); const n = { ...saved, id: String(saved._id||saved.id), _id: String(saved._id||saved.id) }; setCustomFoods((prev) => [n, ...prev]); } catch (err) { console.error(err); }
   }
   async function toggleCustomFood(id) {
-    setCustomFoods((prev) => { const next = prev.map((f) => String(f.id)===String(id) ? { ...f, checked: !f.checked } : f); const food = next.find((f) => String(f.id)===String(id)); if (food) api.toggleCustomFood(id, food.checked).catch(console.error); return next; });
+    setCustomFoods((prev) => {
+      const next = prev.map((f) => String(f.id) === String(id) ? { ...f, checked: !f.checked } : f);
+      const food = next.find((f) => String(f.id) === String(id));
+      if (food) {
+        api.toggleCustomFood(id, food.checked).catch(console.error);
+        const pinnedKey = "promoted_" + String(id);
+        const isPinned = presetFoods.some((f) => f._promoted && f._customId === String(id));
+        if (isPinned) {
+          setItems((prev) => {
+            const next2 = { ...prev };
+            if (food.checked) next2[pinnedKey] = 1;
+            else delete next2[pinnedKey];
+            scheduleSave({ items: next2 });
+            return next2;
+          });
+        }
+      }
+      return next;
+    });
   }
   async function deleteCustomFood(id) {
     setCustomFoods((prev) => prev.filter((f) => String(f.id)!==String(id)));
@@ -999,14 +1029,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     const customId = String(customFood._id||customFood.id);
     if (presetFoods.some((f) => f._promoted && f._customId===customId)) return;
     const snapshot = { id: customId, name: customFood.name, cal: Number(customFood.cal)||0, pro: Number(customFood.pro)||0, fat: Number(customFood.fat)||0 };
-    // Add to everPromoted so Restore can find it
     setEverPromoted((prev) => {
       const alreadyTracked = prev.some((e) => (typeof e === "string" ? e : e.id) === customId);
       if (alreadyTracked) return prev;
       return [...prev, snapshot];
     });
-    // Clear from permDeletedPromoted — user is explicitly re-pinning,
-    // so a previous "delete permanently" should no longer block restore
     setPermDeletedPromoted((prev) => prev.filter((cid) => cid !== customId));
     setPresetFoods((prev) => [...prev, customFoodToPreset(customFood)]);
   }
@@ -1014,16 +1041,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     const food = presetFoods.find((f) => f.id === id);
     if (food?._promoted) {
       if (mode === "permanent") {
-        // Add to permDeletedPromoted + remove from everPromoted
-        // so Restore never brings it back — food stays in Custom Foods
         setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
         setEverPromoted((prev) => prev.filter((entry) => {
           const cid = typeof entry === "string" ? entry : entry.id;
           return cid !== food._customId;
         }));
       }
-      // "today" (temporary): just remove from presetFoods
-      // Restore via resetPresetFoods uses everPromoted — stays in Custom Foods
     } else {
       if (food) setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
@@ -1220,7 +1243,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                 const { tdee } = calcMifflinLocal({ ...userProfile, goal: userGoal });
                 const dailyDiff = TARGETS.cal - tdee;
                 const weeklyKg = (dailyDiff * 7) / 7700;
-                const curWeight = parseFloat(userProfile.weight);
+                // Use latest logged weight if available, fall back to onboarding weight
+                const latestLoggedWeight = wtHistory.length > 0
+                  ? wtHistory[wtHistory.length - 1].value
+                  : null;
+                const curWeight = latestLoggedWeight ?? parseFloat(userProfile.weight);
                 const projections = [
                   { label: "1 Week",   weeks: 1 },
                   { label: "2 Weeks",  weeks: 2 },
@@ -1234,7 +1261,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                 });
                 return (
                   <>
-                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>Based on your {TARGETS.cal} kcal/day target vs your TDEE</div>
+                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>Starting from {curWeight}kg · based on {TARGETS.cal} kcal/day vs your TDEE</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {projections.map((p, i) => {
                         const isLoss = parseFloat(p.change) < 0;
