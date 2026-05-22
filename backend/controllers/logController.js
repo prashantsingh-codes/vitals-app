@@ -20,7 +20,6 @@ export async function getLog(req, res) {
 export async function saveLog(req, res) {
   try {
     const date = req.body.date || todayStr();
-    // customFoodChecked is a map of { [customFoodId]: true/false }
     const { items, wholeEggs, eggWhites, water, steps, customFoodChecked } = req.body;
     const db = getDB();
 
@@ -30,13 +29,12 @@ export async function saveLog(req, res) {
         $set: {
           userId: req.userId,
           date,
-          ...(items               !== undefined && { items }),
-          ...(wholeEggs           !== undefined && { wholeEggs }),
-          ...(eggWhites           !== undefined && { eggWhites }),
-          ...(water               !== undefined && { water }),
-          ...(steps               !== undefined && { steps }),
-          // Save custom food checked state per day so past dates are correct
-          ...(customFoodChecked   !== undefined && { customFoodChecked }),
+          ...(items             !== undefined && { items }),
+          ...(wholeEggs         !== undefined && { wholeEggs }),
+          ...(eggWhites         !== undefined && { eggWhites }),
+          ...(water             !== undefined && { water }),
+          ...(steps             !== undefined && { steps }),
+          ...(customFoodChecked !== undefined && { customFoodChecked }),
           updatedAt: new Date(),
         },
       },

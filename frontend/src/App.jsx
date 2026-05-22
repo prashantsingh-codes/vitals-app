@@ -416,15 +416,15 @@ function AddFoodModal({ onAdd, onClose }) {
   );
 }
 
-function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted }) {
+function CustomFoodChip({ food, checked, onToggle, onDelete, onPromote, isPromoted }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, background: food.checked ? "var(--accentBg)" : "var(--surface2)", border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`, borderRadius: 10, padding: "10px 8px 10px 10px", position: "relative", minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, background: checked ? "var(--accentBg)" : "var(--surface2)", border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}`, borderRadius: 10, padding: "10px 8px 10px 10px", position: "relative", minWidth: 0 }}>
       <button onClick={onDelete} style={{ position: "absolute", top: 4, right: 4, background: "var(--bg3)", border: "none", borderRadius: 99, width: 18, height: 18, cursor: "pointer", fontSize: 9, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>✕</button>
-      <div onClick={onToggle} style={{ width: 16, height: 16, borderRadius: 5, flexShrink: 0, cursor: "pointer", border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`, background: food.checked ? "var(--accent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {food.checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
+      <div onClick={onToggle} style={{ width: 16, height: 16, borderRadius: 5, flexShrink: 0, cursor: "pointer", border: `1.5px solid ${checked ? "var(--accent)" : "var(--border2)"}`, background: checked ? "var(--accent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
       </div>
       <div onClick={onToggle} style={{ flex: 1, cursor: "pointer", minWidth: 0, paddingRight: 22 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: food.checked ? "var(--accent)" : "var(--text)", wordBreak: "break-word" }}>{food.name}</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: checked ? "var(--accent)" : "var(--text)", wordBreak: "break-word" }}>{food.name}</div>
         <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{food.cal}kcal · {food.pro}g P · {food.fat}g F</div>
       </div>
       <button onClick={onPromote} title={isPromoted ? "Already in preset list" : "Add to preset Food list"}
@@ -798,130 +798,149 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
 // ─── MainApp ──────────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal, serverPresetFoods, serverPermDeletedPromoted, serverEverPromoted, serverPermDeletedPresets }) {
   const TARGETS = userTargets || DEFAULT_TARGETS;
+
+  // ── Daily log state ───────────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(todayStr());
-  const [items, setItems] = useState({});
-  const [wholeEggs, setWholeEggs] = useState(0);
-  const [eggWhites, setEggWhites] = useState(0);
+  const [items, setItems]               = useState({});           // { [foodId]: count }
+  const [wholeEggs, setWholeEggs]       = useState(0);
+  const [eggWhites, setEggWhites]       = useState(0);
+  const [water, setWater]               = useState(0);
+  const [steps, setSteps]               = useState("");
+  // customFoodChecked: { [customFoodId]: true/false } per date — stored in log
+  const [customFoodChecked, setCustomFoodChecked] = useState({});
+
+  // ── Custom foods list (from DB) ───────────────────────────────────────────
   const [customFoods, setCustomFoods] = useState([]);
-  const [presetFoods, setPresetFoods] = useState(() => {
-    const pDelPromoted = serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []);
-    const pDelPresets  = serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []);
-    const savedFoods   = serverPresetFoods?.length > 0 ? serverPresetFoods : (store.get("vt_preset_foods", null) || FOODS);
 
-    const base = savedFoods.filter((f) => {
-      if (f._promoted) return !pDelPromoted.includes(f._customId);
-      return !pDelPresets.includes(f.id);
-    });
-
-    return base;
+  // ── Pinned foods model ────────────────────────────────────────────────────
+  // pinnedFoods      : master list {id, name, cal, pro, fat} — never auto-removed
+  // tempRemovedPinned: IDs hidden until "Restore presets" — cleared by restore
+  // permDeletedPinned: IDs permanently removed from preset list — never cleared
+  // permDeletedPresets: built-in food IDs removed from preset list
+  const [pinnedFoods, setPinnedFoods] = useState(() => {
+    const raw = serverEverPromoted || store.get("vt_ever_promoted", []);
+    return raw.map((e) => typeof e === "string" ? { id: e } : e);
   });
-  const [permDeletedPromoted, setPermDeletedPromoted] = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
-  const [everPromoted, setEverPromoted] = useState(() => serverEverPromoted || store.get("vt_ever_promoted", []));
-  const [permDeletedPresets, setPermDeletedPresets] = useState(() => serverPermDeletedPresets || store.get("vt_perm_deleted_presets", []));
-  const [wtInput, setWtInput] = useState("");
-  const [wtHistory, setWtHistory] = useState([]);
-  const [activeTab, setActiveTab] = useState("tracker");
-  const [water, setWater] = useState(0);
-  const [steps, setSteps] = useState("");
-  const [syncing, setSyncing] = useState(false);
+  const [tempRemovedPinned,  setTempRemovedPinned]  = useState(() => store.get("vt_temp_removed_pinned",  []));
+  const [permDeletedPinned,  setPermDeletedPinned]  = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
+  const [permDeletedPresets, setPermDeletedPresets] = useState(() => serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []));
+
+  // ── Derive presetFoods (never stored separately — always computed) ────────
+  // Visible = built-ins (not perm-deleted) + pinned (not perm-deleted, not temp-removed)
+  const presetFoods = [
+    ...FOODS.filter((f) => !permDeletedPresets.includes(f.id)),
+    ...pinnedFoods
+      .filter((p) => p.name && !permDeletedPinned.includes(p.id) && !tempRemovedPinned.includes(p.id))
+      .map((p) => {
+        // Use freshest data from live customFoods list if available
+        const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
+        return customFoodToPreset(live || p);
+      }),
+  ];
+
+  // ── Other UI state ────────────────────────────────────────────────────────
+  const [wtInput, setWtInput]         = useState("");
+  const [wtHistory, setWtHistory]     = useState([]);
+  const [activeTab, setActiveTab]     = useState("tracker");
+  const [syncing, setSyncing]         = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [tipIdx] = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
+  const [tipIdx]   = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
   const [quoteIdx] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
   const [desktop, setDesktop] = useState(() => window.innerWidth >= 768);
-  const syncTimer = useRef(null);
+
+  const syncTimer       = useRef(null);
   const presetSyncTimer = useRef(null);
-  const presetInitialized = useRef(false);
+  const presetInitialized       = useRef(false);
   const midnightResetInProgress = useRef(false);
-  const modalOpenRef = useRef(false);
+  const modalOpenRef            = useRef(false);
   const isToday = selectedDate === todayStr();
 
-  // ─── FIX 1: Ref that always holds the latest customFoods without stale closure ───
-  const customFoodsRef = useRef(customFoods);
-  useEffect(() => { customFoodsRef.current = customFoods; }, [customFoods]);
+  // Fresh refs — avoid stale closures in async callbacks
+  const customFoodsRef  = useRef(customFoods);
+  const itemsRef        = useRef(items);
+  const wholeEggsRef    = useRef(wholeEggs);
+  const eggWhitesRef    = useRef(eggWhites);
+  const waterRef        = useRef(water);
+  const stepsRef        = useRef(steps);
+  const customFoodCheckedRef = useRef(customFoodChecked);
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => { customFoodsRef.current       = customFoods;        }, [customFoods]);
+  useEffect(() => { itemsRef.current             = items;              }, [items]);
+  useEffect(() => { wholeEggsRef.current         = wholeEggs;          }, [wholeEggs]);
+  useEffect(() => { eggWhitesRef.current         = eggWhites;          }, [eggWhites]);
+  useEffect(() => { waterRef.current             = water;              }, [water]);
+  useEffect(() => { stepsRef.current             = steps;              }, [steps]);
+  useEffect(() => { customFoodCheckedRef.current = customFoodChecked;  }, [customFoodChecked]);
+  useEffect(() => { selectedDateRef.current      = selectedDate;       }, [selectedDate]);
 
-  // ─── FIX 2: Ref that always holds latest everPromoted / permDeletedPromoted ───
-  const everPromotedRef = useRef(everPromoted);
-  useEffect(() => { everPromotedRef.current = everPromoted; }, [everPromoted]);
-  const permDeletedPromotedRef = useRef(permDeletedPromoted);
-  useEffect(() => { permDeletedPromotedRef.current = permDeletedPromoted; }, [permDeletedPromoted]);
-
-  const macros = calcMacros(items, wholeEggs, eggWhites, customFoods, presetFoods);
-  const rCal = TARGETS.cal - macros.cal, rPro = TARGETS.pro - macros.pro, rFat = TARGETS.fat - macros.fat;
+  const macros = calcMacros(items, wholeEggs, eggWhites,
+    customFoods.map((f) => ({ ...f, checked: !!customFoodChecked[f.id] })),
+    presetFoods);
+  const rCal = TARGETS.cal - macros.cal;
+  const rPro = TARGETS.pro - macros.pro;
+  const rFat = TARGETS.fat - macros.fat;
 
   useEffect(() => { modalOpenRef.current = showAddModal; }, [showAddModal]);
-  useEffect(() => { const fn = () => setDesktop(window.innerWidth >= 768); window.addEventListener("resize", fn); return () => window.removeEventListener("resize", fn); }, []);
+  useEffect(() => {
+    const fn = () => setDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
 
+  // ── Persist pinned food config to localStorage + server ──────────────────
   useEffect(() => {
     if (!presetInitialized.current) { presetInitialized.current = true; return; }
-    store.set("vt_preset_foods", presetFoods); store.set("vt_perm_deleted_promoted", permDeletedPromoted); store.set("vt_ever_promoted", everPromoted); store.set("vt_perm_deleted_presets", permDeletedPresets);
+    store.set("vt_ever_promoted",       pinnedFoods);
+    store.set("vt_temp_removed_pinned", tempRemovedPinned);
+    store.set("vt_perm_deleted_promoted", permDeletedPinned);
+    store.set("vt_perm_deleted_presets",  permDeletedPresets);
     if (presetSyncTimer.current) clearTimeout(presetSyncTimer.current);
     presetSyncTimer.current = setTimeout(() => {
-      api.saveProfile({ goal: userGoal, profile: userProfile, targets: TARGETS, presetFoods, permDeletedPromoted, everPromoted, permDeletedPresets }).catch(console.error);
+      api.saveProfile({
+        goal: userGoal, profile: userProfile, targets: TARGETS,
+        // Send in legacy format so server stays compatible
+        presetFoods:          presetFoods,
+        everPromoted:         pinnedFoods,
+        permDeletedPromoted:  permDeletedPinned,
+        permDeletedPresets:   permDeletedPresets,
+      }).catch(console.error);
     }, 1000);
-  }, [presetFoods, permDeletedPromoted, everPromoted, permDeletedPresets]);
+  }, [pinnedFoods, tempRemovedPinned, permDeletedPinned, permDeletedPresets]);
 
-  // ─── Refs to always read current items/eggs/water/steps without stale closures ───
-  const itemsRef      = useRef(items);
-  const wholeEggsRef  = useRef(wholeEggs);
-  const eggWhitesRef  = useRef(eggWhites);
-  const waterRef      = useRef(water);
-  const stepsRef      = useRef(steps);
-  const selectedDateRef = useRef(selectedDate);
-  useEffect(() => { itemsRef.current     = items;        }, [items]);
-  useEffect(() => { wholeEggsRef.current = wholeEggs;    }, [wholeEggs]);
-  useEffect(() => { eggWhitesRef.current = eggWhites;    }, [eggWhites]);
-  useEffect(() => { waterRef.current     = water;        }, [water]);
-  useEffect(() => { stepsRef.current     = steps;        }, [steps]);
-  useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
-
-  // ─── Midnight reset ───────────────────────────────────────────────────────
+  // ── Midnight reset ────────────────────────────────────────────────────────
   useEffect(() => {
     async function checkMidnightReset() {
       const lastDate = localStorage.getItem("vt_log_date");
-      const today = todayStr();
+      const today    = todayStr();
       if (lastDate && lastDate !== today) {
         midnightResetInProgress.current = true;
-
-        // STEP 1: Flush any pending debounced save for the OLD date FIRST.
-        // If a save was queued just before midnight, cancel it and immediately
-        // flush the current in-memory state to the server for yesterday's date.
-        // This ensures yesterday's log is never lost.
+        // Flush any pending save for yesterday before zeroing state
         if (syncTimer.current) {
           clearTimeout(syncTimer.current);
           syncTimer.current = null;
           setSyncing(false);
-          // Flush current state to yesterday's date before we zero it
           try {
             await api.saveLog({
-              date:      lastDate,
-              items:     itemsRef.current,
-              wholeEggs: wholeEggsRef.current,
-              eggWhites: eggWhitesRef.current,
-              water:     waterRef.current,
-              steps:     stepsRef.current,
+              date:             lastDate,
+              items:            itemsRef.current,
+              wholeEggs:        wholeEggsRef.current,
+              eggWhites:        eggWhitesRef.current,
+              water:            waterRef.current,
+              steps:            stepsRef.current,
+              customFoodChecked: customFoodCheckedRef.current,
             });
           } catch (e) { console.error("Midnight flush error:", e); }
         }
-
-        // STEP 2: Zero out UI state for the new day (fresh slate).
+        // Zero out all UI state for the new day
         setItems({});
         setWholeEggs(0);
         setEggWhites(0);
         setWater(0);
         setSteps("");
-
-        // STEP 3: Untoggle all checked custom foods for the new day.
-        // Use the ref so we read the current list without stale closure issues.
-        const toUntoggle = customFoodsRef.current.filter((f) => f.checked);
-        setCustomFoods((prev) => prev.map((f) => ({ ...f, checked: false })));
-        try {
-          await Promise.all(
-            toUntoggle.map((f) => api.toggleCustomFood(f._id || f.id, false).catch(console.error))
-          );
-        } finally {
-          midnightResetInProgress.current = false;
-        }
+        setCustomFoodChecked({});
+        // Pinned foods stay in the list — just unchecked (items already zeroed above)
+        midnightResetInProgress.current = false;
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -930,172 +949,188 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     return () => clearInterval(interval);
   }, []);
 
+  // ── Load data for selected date ───────────────────────────────────────────
   useEffect(() => {
     async function loadAll() {
       setLoadingData(true);
       try {
-        const [log, weight, foods] = await Promise.all([api.getLog(selectedDate), api.getWeight(), api.getCustomFoods()]);
-        setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
-        setWtHistory(weight);
-        const logItems = log.items || {};
-        const normalizedFoods = foods.map((f) => {
-          const fid = String(f._id || f.id);
+        const [log, weight, foods] = await Promise.all([
+          api.getLog(selectedDate),
+          api.getWeight(),
+          api.getCustomFoods(),
+        ]);
+        // Restore log state for this date
+        setItems(log.items || {});
+        setWholeEggs(log.wholeEggs || 0);
+        setEggWhites(log.eggWhites || 0);
+        setWater(log.water || 0);
+        setSteps(log.steps || "");
+        // Restore custom food checked state from the log (per-date)
+        // Fall back to deriving from log.items for pinned foods (backward compat)
+        const logChecked = log.customFoodChecked || {};
+        const logItems   = log.items || {};
+        const checkedMap = {};
+        foods.forEach((f) => {
+          const fid      = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
-          const pinnedCount = logItems[pinnedKey];
-          const checkedFromPin = pinnedCount !== undefined ? Number(pinnedCount) > 0 : undefined;
-          return {
-            ...f,
-            id: fid,
-            _id: fid,
-            checked: checkedFromPin !== undefined ? checkedFromPin : f.checked,
-          };
+          if (logChecked[fid] !== undefined) {
+            checkedMap[fid] = logChecked[fid];
+          } else if (logItems[pinnedKey] !== undefined) {
+            // Legacy: derive from pinned item count
+            checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+          }
+          // else: leave undefined — UI will show unchecked
         });
-        setCustomFoods(normalizedFoods);
-
-        // Restore any everPromoted foods that were "deleted for today" and are missing from presetFoods
-        setPresetFoods((prev) => {
-          const currentPromotedIds = new Set(prev.filter((f) => f._promoted).map((f) => f._customId));
-          const missingPromoted = normalizedFoods.filter((cf) => {
-            const cid = String(cf._id || cf.id);
-            return everPromotedRef.current.includes(cid) && !permDeletedPromotedRef.current.includes(cid) && !currentPromotedIds.has(cid);
-          }).map(customFoodToPreset);
-          if (missingPromoted.length === 0) return prev;
-          return [...prev, ...missingPromoted];
-        });
-      } catch (err) { console.error("Load error:", err); } finally { setLoadingData(false); }
+        setCustomFoodChecked(checkedMap);
+        setWtHistory(weight);
+        if (!midnightResetInProgress.current) {
+          setCustomFoods(foods.map((f) => ({
+            ...f, id: String(f._id || f.id), _id: String(f._id || f.id),
+          })));
+        }
+        // Fill in any pinnedFoods stubs that are missing name/cal/pro/fat
+        setPinnedFoods((prev) => prev.map((p) => {
+          if (p.name) return p; // already complete
+          const live = foods.find((f) => String(f._id || f.id) === p.id);
+          return live ? { id: p.id, name: live.name, cal: live.cal, pro: live.pro, fat: live.fat } : p;
+        }));
+      } catch (err) { console.error("Load error:", err); }
+      finally { setLoadingData(false); }
     }
     loadAll();
   }, [selectedDate]);
 
+  // ── 30s polling (today only) ──────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (modalOpenRef.current || !isToday || midnightResetInProgress.current) return;
+      if (modalOpenRef.current || !isToday || midnightResetInProgress.current || syncTimer.current) return;
       try {
         const [log, foods] = await Promise.all([api.getLog(selectedDate), api.getCustomFoods()]);
-        setItems(log.items || {}); setWholeEggs(log.wholeEggs || 0); setEggWhites(log.eggWhites || 0); setWater(log.water || 0); setSteps(log.steps || "");
-        setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id||f.id), _id: String(f._id||f.id) })));
+        setItems(log.items || {});
+        setWholeEggs(log.wholeEggs || 0);
+        setEggWhites(log.eggWhites || 0);
+        setWater(log.water || 0);
+        setSteps(log.steps || "");
+        const logChecked = log.customFoodChecked || {};
+        const logItems   = log.items || {};
+        const checkedMap = {};
+        foods.forEach((f) => {
+          const fid = String(f._id || f.id);
+          const pinnedKey = "promoted_" + fid;
+          if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
+          else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+        });
+        setCustomFoodChecked(checkedMap);
+        setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
       } catch (err) { console.error("Poll error:", err); }
     }, 30000);
     return () => clearInterval(interval);
   }, [selectedDate, isToday]);
 
+  // ── Save helpers ──────────────────────────────────────────────────────────
   function scheduleSave(patch) {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
     syncTimer.current = setTimeout(async () => {
-      try { await api.saveLog({ ...patch, date: selectedDate }); } catch (e) { console.error("Save error:", e); }
+      try { await api.saveLog({ ...patch, date: selectedDate }); }
+      catch (e) { console.error("Save error:", e); }
       setSyncing(false);
     }, 800);
   }
 
   function setItemCount(id, count) {
-    setItems((prev) => { const next = { ...prev, [id]: count }; if (count === 0) delete next[id]; scheduleSave({ items: next }); return next; });
+    setItems((prev) => {
+      const next = { ...prev, [id]: count };
+      if (count === 0) delete next[id];
+      scheduleSave({ items: next });
+      return next;
+    });
   }
   function handleWholeEggs(v) { setWholeEggs(v); scheduleSave({ wholeEggs: v }); }
   function handleEggWhites(v) { setEggWhites(v); scheduleSave({ eggWhites: v }); }
-  function handleWater(v) { setWater(v); scheduleSave({ water: v }); }
-  function handleSteps(v) { setSteps(v); scheduleSave({ steps: v }); }
+  function handleWater(v)     { setWater(v);     scheduleSave({ water: v });     }
+  function handleSteps(v)     { setSteps(v);     scheduleSave({ steps: v });     }
 
+  // ── Custom food actions ───────────────────────────────────────────────────
   async function addCustomFood(food) {
-    try { const saved = await api.addCustomFood(food); const n = { ...saved, id: String(saved._id||saved.id), _id: String(saved._id||saved.id) }; setCustomFoods((prev) => [n, ...prev]); } catch (err) { console.error(err); }
+    try {
+      const saved = await api.addCustomFood(food);
+      const n = { ...saved, id: String(saved._id || saved.id), _id: String(saved._id || saved.id) };
+      setCustomFoods((prev) => [n, ...prev]);
+    } catch (err) { console.error(err); }
   }
-  async function toggleCustomFood(id) {
-    setCustomFoods((prev) => {
-      const next = prev.map((f) => String(f.id) === String(id) ? { ...f, checked: !f.checked } : f);
-      const food = next.find((f) => String(f.id) === String(id));
-      if (food) {
-        api.toggleCustomFood(id, food.checked).catch(console.error);
-        const pinnedKey = "promoted_" + String(id);
-        const isPinned = presetFoods.some((f) => f._promoted && f._customId === String(id));
-        if (isPinned) {
-          setItems((prev) => {
-            const next2 = { ...prev };
-            if (food.checked) next2[pinnedKey] = 1;
-            else delete next2[pinnedKey];
-            scheduleSave({ items: next2 });
-            return next2;
-          });
-        }
+
+  function toggleCustomFood(id) {
+    const sid = String(id);
+    setCustomFoodChecked((prev) => {
+      const newVal = !prev[sid];
+      const next = { ...prev, [sid]: newVal };
+      scheduleSave({ customFoodChecked: next });
+      // If this food is also pinned keep items in sync
+      const pinnedKey = "promoted_" + sid;
+      const isPinned = pinnedFoods.some((p) => p.id === sid && !permDeletedPinned.includes(sid) && !tempRemovedPinned.includes(sid));
+      if (isPinned) {
+        setItems((prevItems) => {
+          const nextItems = { ...prevItems };
+          if (newVal) nextItems[pinnedKey] = 1; else delete nextItems[pinnedKey];
+          scheduleSave({ items: nextItems, customFoodChecked: next });
+          return nextItems;
+        });
       }
       return next;
     });
   }
+
   async function deleteCustomFood(id) {
-    setCustomFoods((prev) => prev.filter((f) => String(f.id)!==String(id)));
-    api.deleteCustomFood(id).catch(console.error);
-    setPresetFoods((prev) => prev.filter((f) => !(f._promoted && f._customId===String(id))));
+    const sid = String(id);
+    setCustomFoods((prev) => prev.filter((f) => String(f.id) !== sid));
+    api.deleteCustomFood(sid).catch(console.error);
+    // Remove from pinned if present
+    setPinnedFoods((prev) => prev.filter((p) => p.id !== sid));
+    setPermDeletedPinned((prev) => prev.filter((cid) => cid !== sid));
+    setTempRemovedPinned((prev) => prev.filter((cid) => cid !== sid));
   }
+
+  // ── Pin / unpin actions ───────────────────────────────────────────────────
   function promoteCustomFood(customFood) {
-    const customId = String(customFood._id||customFood.id);
-    if (presetFoods.some((f) => f._promoted && f._customId===customId)) return;
-    const snapshot = { id: customId, name: customFood.name, cal: Number(customFood.cal)||0, pro: Number(customFood.pro)||0, fat: Number(customFood.fat)||0 };
-    setEverPromoted((prev) => {
-      const alreadyTracked = prev.some((e) => (typeof e === "string" ? e : e.id) === customId);
-      if (alreadyTracked) return prev;
-      return [...prev, snapshot];
-    });
-    setPermDeletedPromoted((prev) => prev.filter((cid) => cid !== customId));
-    setPresetFoods((prev) => [...prev, customFoodToPreset(customFood)]);
+    const sid = String(customFood._id || customFood.id);
+    // Already pinned and visible — do nothing
+    if (pinnedFoods.some((p) => p.id === sid) && !permDeletedPinned.includes(sid) && !tempRemovedPinned.includes(sid)) return;
+    const snapshot = { id: sid, name: customFood.name, cal: Number(customFood.cal) || 0, pro: Number(customFood.pro) || 0, fat: Number(customFood.fat) || 0 };
+    // Add to pinnedFoods if not already there
+    setPinnedFoods((prev) => prev.some((p) => p.id === sid) ? prev.map((p) => p.id === sid ? snapshot : p) : [...prev, snapshot]);
+    // Clear any previous deletion flags so it becomes visible again
+    setPermDeletedPinned((prev) => prev.filter((cid) => cid !== sid));
+    setTempRemovedPinned((prev) => prev.filter((cid) => cid !== sid));
   }
+
   function deletePresetFood(id, mode) {
     const food = presetFoods.find((f) => f.id === id);
-    if (food?._promoted) {
+    if (!food) return;
+    if (food._promoted) {
       if (mode === "permanent") {
-        setPermDeletedPromoted((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
-        setEverPromoted((prev) => prev.filter((entry) => {
-          const cid = typeof entry === "string" ? entry : entry.id;
-          return cid !== food._customId;
-        }));
+        // Permanently remove from preset list — stays in Custom Foods section
+        setPermDeletedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
+        setTempRemovedPinned((prev) => prev.filter((cid) => cid !== food._customId));
+      } else {
+        // Temporarily remove — comes back on "Restore presets"
+        setTempRemovedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
       }
     } else {
-      if (food) setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
+      // Built-in hardcoded food — mark as deleted (both modes same for built-ins)
+      setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
-    setPresetFoods((prev) => prev.filter((f) => f.id !== id));
+    // Clear its count from today's log
     setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
   }
 
-  // ─── resetPresetFoods ────────────────────────────────────────────────────────
+  // ── Restore presets ───────────────────────────────────────────────────────
   function resetPresetFoods() {
-    // Restore all built-in presets except those permanently deleted
-    const restoredBuiltins = FOODS.filter((f) => !permDeletedPresets.includes(f.id));
-
-    // Re-add all ever-promoted custom foods that haven't been permanently deleted.
-    // everPromoted may contain plain string IDs (legacy) or full snapshots.
-    // For both, prefer the live customFoodsRef data; fall back to snapshot if available.
-    const currentPermDeleted = permDeletedPromotedRef.current;
-    const freshFoods = customFoodsRef.current;
-
-    const promotedEntries = everPromotedRef.current
-      .filter((entry) => {
-        const cid = typeof entry === "string" ? entry : entry.id;
-        return !currentPermDeleted.includes(cid);
-      })
-      .map((entry) => {
-        const cid = typeof entry === "string" ? entry : entry.id;
-        // Always prefer the live customFood (freshest data)
-        const liveCf = freshFoods.find((f) => String(f._id || f.id) === cid);
-        if (liveCf) return customFoodToPreset(liveCf);
-        // Fall back to stored snapshot (new format)
-        if (typeof entry === "object" && entry.name) {
-          return {
-            id: "promoted_" + entry.id,
-            _promoted: true,
-            _customId: entry.id,
-            label: entry.name,
-            cal: entry.cal,
-            pro: entry.pro,
-            fat: entry.fat,
-            section: "My Foods",
-          };
-        }
-        // Legacy plain string with no matching live food — skip
-        return null;
-      })
-      .filter(Boolean);
-
-    setPresetFoods([...restoredBuiltins, ...promotedEntries]);
-    // Clear only built-in "today" deletes, NOT permDeletedPromoted
+    // Restore built-in foods by clearing permDeletedPresets
     setPermDeletedPresets([]);
+    // Restore temporarily hidden pinned foods
+    setTempRemovedPinned([]);
+    // permDeletedPinned is intentionally NOT cleared — those stay gone
   }
 
   async function logWeight() {
@@ -1129,7 +1164,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     return "Keep logging to hit your targets!";
   }
 
-  const promotedCustomIds = new Set(presetFoods.filter((f) => f._promoted).map((f) => f._customId));
+  const promotedCustomIds = new Set(
+    pinnedFoods
+      .filter((p) => !permDeletedPinned.includes(p.id))
+      .map((p) => p.id)
+  );
   const sections = ["Milk","Grains & Protein","Paneer","Dal","Soya","My Foods"];
   const pred = weightPrediction();
 
@@ -1195,7 +1234,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <button onClick={() => setShowAddModal(true)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--accentBg)", border: "1.5px dashed var(--accent)", borderRadius: 10, padding: "11px 0", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "inherit", marginBottom: customFoods.length ? 12 : 0 }}>➕ Add Custom Food</button>
               {customFoods.length > 0 && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {customFoods.map((f) => <CustomFoodChip key={f.id} food={f} onToggle={() => toggleCustomFood(f.id)} onDelete={() => deleteCustomFood(f.id)} onPromote={() => promoteCustomFood(f)} isPromoted={promotedCustomIds.has(String(f._id||f.id))} />)}
+                  {customFoods.map((f) => <CustomFoodChip key={f.id} food={f} checked={!!customFoodChecked[f.id]} onToggle={() => toggleCustomFood(f.id)} onDelete={() => deleteCustomFood(f.id)} onPromote={() => promoteCustomFood(f)} isPromoted={promotedCustomIds.has(String(f._id||f.id))} />)}
                 </div>
               )}
               {customFoods.length === 0 && (
@@ -1243,10 +1282,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                 const { tdee } = calcMifflinLocal({ ...userProfile, goal: userGoal });
                 const dailyDiff = TARGETS.cal - tdee;
                 const weeklyKg = (dailyDiff * 7) / 7700;
-                // Use latest logged weight if available, fall back to onboarding weight
-                const latestLoggedWeight = wtHistory.length > 0
-                  ? wtHistory[wtHistory.length - 1].value
-                  : null;
+                const latestLoggedWeight = wtHistory.length > 0 ? wtHistory[wtHistory.length - 1].value : null;
                 const curWeight = latestLoggedWeight ?? parseFloat(userProfile.weight);
                 const projections = [
                   { label: "1 Week",   weeks: 1 },
@@ -1261,7 +1297,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                 });
                 return (
                   <>
-                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>Starting from {curWeight}kg · based on {TARGETS.cal} kcal/day vs your TDEE</div>
+                    <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>Based on your {TARGETS.cal} kcal/day target vs your TDEE</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {projections.map((p, i) => {
                         const isLoss = parseFloat(p.change) < 0;
