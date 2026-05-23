@@ -1352,6 +1352,16 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     // Restore temporarily hidden pinned foods
     setTempRemovedPinned([]);
     // permDeletedPinned is intentionally NOT cleared — those stay gone
+    // Explicitly save to server immediately so other devices pick up the restore
+    // without waiting for the debounced save effect (which may be suppressed)
+    api.saveProfile({
+      goal: userGoal, profile: userProfile, targets: TARGETS,
+      presetFoods:         presetFoods,
+      everPromoted:        pinnedFoods,
+      permDeletedPromoted: permDeletedPinned,
+      permDeletedPresets:  [],
+      tempRemovedPinned:   [],
+    }).catch(console.error);
   }
 
   async function logWeight() {
