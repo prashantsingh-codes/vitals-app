@@ -818,39 +818,76 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   // permDeletedPinned: IDs permanently removed from preset list — never cleared
   // permDeletedPresets: built-in food IDs removed from preset list
   const [pinnedFoods, setPinnedFoods] = useState(() => {
-    // serverEverPromoted starts as [] (truthy but empty) — must check length
-    const raw = (serverEverPromoted && serverEverPromoted.length > 0)
-      ? serverEverPromoted
-      : store.get("vt_ever_promoted", []);
+    const raw = serverEverPromoted || store.get("vt_ever_promoted", []);
     return raw.map((e) => typeof e === "string" ? { id: e } : e);
   });
   const [tempRemovedPinned,  setTempRemovedPinned]  = useState(() => store.get("vt_temp_removed_pinned",  []));
-  const [permDeletedPinned,  setPermDeletedPinned]  = useState(() =>
-    (serverPermDeletedPromoted && serverPermDeletedPromoted.length > 0)
-      ? serverPermDeletedPromoted
-      : store.get("vt_perm_deleted_promoted", [])
-  );
-  const [permDeletedPresets, setPermDeletedPresets] = useState(() =>
-    (serverPermDeletedPresets && serverPermDeletedPresets.length > 0)
-      ? serverPermDeletedPresets
-      : store.get("vt_perm_deleted_presets",  [])
-  );
+  const [permDeletedPinned,  setPermDeletedPinned]  = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
+  const [permDeletedPresets, setPermDeletedPresets] = useState(() => serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []));
+
+  // Declare customFoodsRef early so the hydration effects below can use it
+  const customFoodsRef = useRef([]);
+
+  // ── Hydrate pinnedFoods & permDeletedPinned from server when props arrive ─
+  // This fixes the race condition where MainApp mounts before App's getProfile()
+  // resolves, so serverEverPromoted / serverPermDeletedPromoted start as [].
+  const serverHydrated = useRef(false);
+  useEffect(() => {
+    if (!serverEverPromoted || serverEverPromoted.length === 0) return;
+    if (serverHydrated.current) return; // only hydrate once from server
+    serverHydrated.current = true;
+    setPinnedFoods((prev) => {
+      // Merge: server entries take priority; keep any locally-added ones not on server
+      const serverIds = new Set(serverEverPromoted.map((e) => (typeof e === "string" ? e : e.id)));
+      const serverEntries = serverEverPromoted.map((e) => {
+        const entry = typeof e === "string" ? { id: e } : e;
+        // Try to fill in name/cal/pro/fat from already-loaded customFoods
+        if (!entry.name) {
+          const live = customFoodsRef.current.find((cf) => String(cf._id || cf.id) === entry.id);
+          if (live) return { id: entry.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 };
+        }
+        return entry;
+      });
+      const localOnly = prev.filter((p) => !serverIds.has(p.id));
+      return [...serverEntries, ...localOnly];
+    });
+  }, [serverEverPromoted]);
+
+  useEffect(() => {
+    if (!serverPermDeletedPromoted || serverPermDeletedPromoted.length === 0) return;
+    if (serverHydrated.current && permDeletedPinned.length > 0) return;
+    setPermDeletedPinned(serverPermDeletedPromoted);
+  }, [serverPermDeletedPromoted]);
 
   // ── Derive presetFoods (never stored separately — always computed) ────────
   // Visible = built-ins (not perm-deleted) + pinned (not perm-deleted, not temp-removed)
   const presetFoods = [
     ...FOODS.filter((f) => !permDeletedPresets.includes(f.id)),
     ...pinnedFoods
-      .filter((p) => !permDeletedPinned.includes(p.id) && !tempRemovedPinned.includes(p.id))
+      .filter((p) => p.name && !permDeletedPinned.includes(p.id) && !tempRemovedPinned.includes(p.id))
       .map((p) => {
-        // Always prefer live customFoods data (freshest name/cal/pro/fat)
+        // Use freshest data from live customFoods list if available
         const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
-        const source = live || p;
-        if (!source.name) return null; // skip stubs not yet hydrated
-        return customFoodToPreset(source);
-      })
-      .filter(Boolean),
+        return customFoodToPreset(live || p);
+      }),
   ];
+
+  // ── Back-fill pinnedFoods stubs whenever customFoods loads/updates ────────
+  // Handles the race: server hydration may set pinnedFoods after loadAll already ran.
+  useEffect(() => {
+    if (!customFoods.length) return;
+    setPinnedFoods((prev) => {
+      let changed = false;
+      const next = prev.map((p) => {
+        if (p.name) return p; // already complete
+        const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
+        if (!live) return p;
+        changed = true;
+        return { id: p.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 };
+      });
+      return changed ? next : prev; // avoid re-render if nothing changed
+    });
+  }, [customFoods]);
 
   // ── Other UI state ────────────────────────────────────────────────────────
   const [wtInput, setWtInput]         = useState("");
@@ -862,7 +899,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [tipIdx]   = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
   const [quoteIdx] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
   const [desktop, setDesktop] = useState(() => window.innerWidth >= 768);
-  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const syncTimer       = useRef(null);
   const presetSyncTimer = useRef(null);
@@ -872,7 +908,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const isToday = selectedDate === todayStr();
 
   // Fresh refs — avoid stale closures in async callbacks
-  const customFoodsRef  = useRef(customFoods);
+  // (customFoodsRef declared earlier, before the hydration effects)
   const itemsRef        = useRef(items);
   const wholeEggsRef    = useRef(wholeEggs);
   const eggWhitesRef    = useRef(eggWhites);
@@ -903,27 +939,10 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     return () => window.removeEventListener("resize", fn);
   }, []);
 
-  // ── Sync server profile data into local state when it arrives ──────────────
-  // useState initializer runs once — if server data arrives later we need
-  // to explicitly update state to reflect the server's source of truth
-  useEffect(() => {
-    if (serverEverPromoted && serverEverPromoted.length > 0) {
-      setPinnedFoods(serverEverPromoted.map((e) => typeof e === "string" ? { id: e } : e));
-    }
-  }, [serverEverPromoted]);
-  useEffect(() => {
-    if (serverPermDeletedPromoted && serverPermDeletedPromoted.length > 0) {
-      setPermDeletedPinned(serverPermDeletedPromoted);
-    }
-  }, [serverPermDeletedPromoted]);
-  useEffect(() => {
-    if (serverPermDeletedPresets && serverPermDeletedPresets.length > 0) {
-      setPermDeletedPresets(serverPermDeletedPresets);
-    }
-  }, [serverPermDeletedPresets]);
-
   // ── Persist pinned food config to localStorage + server ──────────────────
   useEffect(() => {
+    // Skip the very first run (mount with local-storage values — no changes yet)
+    // but DO persist whenever serverHydrated has fired (server data arrived)
     if (!presetInitialized.current) { presetInitialized.current = true; return; }
     store.set("vt_ever_promoted",       pinnedFoods);
     store.set("vt_temp_removed_pinned", tempRemovedPinned);
@@ -975,8 +994,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setCustomFoodChecked({});
         // Pinned foods stay in the list — just unchecked (items already zeroed above)
         midnightResetInProgress.current = false;
-        // Re-fetch today's (empty) log so UI is in sync with server
-        setReloadTrigger((n) => n + 1);
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -1012,11 +1029,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
-            // Legacy v2: pinned item count stored in log.items
+            // Legacy: derive from pinned item count
             checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
-          } else if (f.checked !== undefined) {
-            // Legacy v1: checked stored on food document itself
-            checkedMap[fid] = !!f.checked;
           }
           // else: leave undefined — UI will show unchecked
         });
@@ -1037,7 +1051,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
       finally { setLoadingData(false); }
     }
     loadAll();
-  }, [selectedDate, reloadTrigger]);
+  }, [selectedDate]);
 
   // ── 30s polling (today only) ──────────────────────────────────────────────
   useEffect(() => {
@@ -1058,7 +1072,6 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           const pinnedKey = "promoted_" + fid;
           if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
           else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
-          else if (f.checked !== undefined) checkedMap[fid] = !!f.checked;
         });
         setCustomFoodChecked(checkedMap);
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
