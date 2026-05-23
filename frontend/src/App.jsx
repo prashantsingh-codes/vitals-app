@@ -773,7 +773,6 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
           <div style={{ textAlign: "center", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue,#2563EB)" }}>{water}</div>
-              <button onClick={() => { const v = parseInt(prompt("Enter glasses of water:", water) ?? water, 10); if (!isNaN(v) && v >= 0) handleWater(Math.min(25, v)); }} title="Edit water intake" style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, width: 26, height: 26, cursor: "pointer", fontSize: 12, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✏️</button>
             </div>
             <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today · <span style={{ color: "var(--blue,#2563EB)", fontWeight: 600 }}>{waterLitres} L</span> · goal: {waterGoal} gl ({(waterGoal * 0.25).toFixed(2)} L) <button onClick={editWaterGoal} title="Edit water goal" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", padding: "0 2px", verticalAlign: "middle" }}>✏️</button></div>
             <ProgBar val={water} max={waterGoal} color="#2563EB" />
@@ -807,7 +806,6 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
         <Card title="Steps Tracker" icon="🚶">
           <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
             <input type="number" value={localSteps} placeholder="Enter steps today" onChange={(e) => { setLocalSteps(e.target.value); handleSteps(e.target.value); }} style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
-            <button onClick={() => { const v = parseInt(prompt("Enter steps:", localSteps) ?? localSteps, 10); if (!isNaN(v) && v >= 0) { setLocalSteps(v); handleSteps(v); } }} title="Edit steps" style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, width: 36, height: 36, cursor: "pointer", fontSize: 14, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✏️</button>
           </div>
           <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: localSteps > 0 ? 8 : stepsHistory.length > 1 ? 8 : 0 }}>Goal: {stepsGoal.toLocaleString()} steps <button onClick={editStepsGoal} title="Edit steps goal" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", padding: "0 2px", verticalAlign: "middle" }}>✏️</button></div>
           {localSteps > 0 && <div style={{ marginBottom: stepsHistory.length > 1 ? 12 : 0 }}>
@@ -1610,18 +1608,20 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: "var(--text)" }}>Vitals</div>
               <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>Hi, {user.name}</div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 11, color: "var(--accent)", fontFamily: "inherit", fontWeight: 700 }}>⚙ Goals</button>
+                <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+                <button onClick={() => setDark((d) => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: "var(--text2)" }}>{dark ? "☀️" : "🌙"}</button>
+                <button onClick={onLogout} title="Logout" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 16, color: "var(--text3)", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </button>
+              </div>
               {syncing && <span style={{ fontSize: 11, color: "var(--text3)" }}>saving…</span>}
-              <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              </button>
-              <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 11, color: "var(--accent)", fontFamily: "inherit", fontWeight: 700 }}>⚙ Goals</button>
-              <button onClick={() => setDark((d) => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: "var(--text2)" }}>{dark ? "☀️" : "🌙"}</button>
-              <button onClick={onLogout} title="Logout" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 16, color: "var(--text3)", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
             </div>
           </div>
         )}
@@ -1631,11 +1631,13 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>{navTabs.find((t) => t.id===activeTab)?.icon} {navTabs.find((t) => t.id===activeTab)?.label}</div>
               <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
             </div>
-            {syncing && <span style={{ fontSize: 12, color: "var(--text3)" }}>☁️ Saving…</span>}
-            <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              {syncing2 ? "Syncing…" : "Sync"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+              <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                {syncing2 ? "Syncing…" : "Sync"}
+              </button>
+              {syncing && <span style={{ fontSize: 12, color: "var(--text3)" }}>☁️ Saving…</span>}
+            </div>
           </div>
         )}
         {panels[activeTab]}
