@@ -1608,7 +1608,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: "var(--text)" }}>Vitals</div>
               <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>Hi, {user.name}</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <div style={{ position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 11, color: "var(--accent)", fontFamily: "inherit", fontWeight: 700 }}>⚙ Goals</button>
                 <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1621,7 +1621,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
                   </svg>
                 </button>
               </div>
-              {syncing && <span style={{ fontSize: 11, color: "var(--text3)" }}>saving…</span>}
+              {syncing && <span style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, fontSize: 12, color: "var(--accent)", fontWeight: 600, whiteSpace: "nowrap" }}>☁️ saving…</span>}
             </div>
           </div>
         )}
@@ -1631,12 +1631,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>{navTabs.find((t) => t.id===activeTab)?.icon} {navTabs.find((t) => t.id===activeTab)?.label}</div>
               <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <div style={{ position: "relative" }}>
               <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 {syncing2 ? "Syncing…" : "Sync"}
               </button>
-              {syncing && <span style={{ fontSize: 12, color: "var(--text3)" }}>☁️ Saving…</span>}
+              {syncing && <span style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, fontSize: 12, color: "var(--text3)", whiteSpace: "nowrap" }}>☁️ Saving…</span>}
             </div>
           </div>
         )}
