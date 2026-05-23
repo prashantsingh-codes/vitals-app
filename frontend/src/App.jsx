@@ -1023,8 +1023,9 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setEggWhites(log.eggWhites || 0);
         setWater(log.water || 0);
         setSteps(log.steps || "");
-        // Restore custom food checked state from the log (per-date)
-        // Fall back to deriving from log.items for pinned foods (backward compat)
+        // Restore custom food checked state from the log (per-date).
+        // logChecked is the authoritative source written by toggleCustomFood / setItemCount.
+        // The promoted_ item-count fallback is only for logs saved before customFoodChecked existed.
         const logChecked = log.customFoodChecked || {};
         const logItems   = log.items || {};
         const checkedMap = {};
@@ -1032,12 +1033,14 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           const fid      = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
           if (logChecked[fid] !== undefined) {
+            // Authoritative — always use it, even if false.
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
-            // Legacy: derive from pinned item count
+            // Legacy backward-compat: derive from pinned item count only when
+            // no customFoodChecked entry exists (old logs saved before this field).
             checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
           }
-          // else: leave undefined — UI will show unchecked
+          // else: leave undefined — UI treats missing key as unchecked
         });
         setCustomFoodChecked(checkedMap);
         setWtHistory(weight);
@@ -1090,8 +1093,17 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           foods.forEach((f) => {
             const fid = String(f._id || f.id);
             const pinnedKey = "promoted_" + fid;
-            if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
-            else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+            if (logChecked[fid] !== undefined) {
+              // Authoritative flag written by toggleCustomFood or setItemCount — always trust it.
+              checkedMap[fid] = logChecked[fid];
+            } else if (logItems[pinnedKey] !== undefined) {
+              // Legacy fallback: only use item count for logs saved before customFoodChecked existed.
+              // Do NOT use this path for any food that has already written a customFoodChecked entry,
+              // to prevent a pinned-food check on one device from phantom-checking the custom food chip
+              // on another device that only reads customFoodChecked.
+              checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+            }
+            // else: food is unchecked — leave out of map (UI treats missing key as false)
           });
           setCustomFoodChecked(checkedMap);
         }
@@ -1158,7 +1170,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           if (willChange) suppressPresetSave.current = true;
         }
       } catch (err) { console.error("Poll error:", err); }
-    }, 30000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);  // empty deps — interval never recreated; reads live values via refs
 
@@ -1177,7 +1189,21 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     setItems((prev) => {
       const next = { ...prev, [id]: count };
       if (count === 0) delete next[id];
-      scheduleSave({ items: next });
+
+      // If this is a pinned custom food (id starts with "promoted_"),
+      // keep customFoodChecked in sync so the other device's poll
+      // reads the authoritative flag instead of falling back to the item count.
+      if (id.startsWith("promoted_")) {
+        const customId = id.slice("promoted_".length);
+        setCustomFoodChecked((prevChecked) => {
+          const newChecked = { ...prevChecked, [customId]: count > 0 };
+          scheduleSave({ items: next, customFoodChecked: newChecked });
+          return newChecked;
+        });
+      } else {
+        scheduleSave({ items: next });
+      }
+
       return next;
     });
   }
