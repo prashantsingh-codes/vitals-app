@@ -1058,7 +1058,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     const interval = setInterval(async () => {
       if (modalOpenRef.current || !isToday || midnightResetInProgress.current || syncTimer.current) return;
       try {
-        const [log, foods] = await Promise.all([api.getLog(selectedDate), api.getCustomFoods()]);
+        const [log, foods, profile] = await Promise.all([
+          api.getLog(selectedDate),
+          api.getCustomFoods(),
+          api.getProfile(),
+        ]);
         setItems(log.items || {});
         setWholeEggs(log.wholeEggs || 0);
         setEggWhites(log.eggWhites || 0);
@@ -1075,6 +1079,37 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         });
         setCustomFoodChecked(checkedMap);
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
+
+        // Sync pinned food config — skip if a local save is in flight to avoid
+        // overwriting changes the user just made on this device.
+        if (!presetSyncTimer.current && profile) {
+          const serverPinned     = (profile.everPromoted        || []).map((e) => typeof e === "string" ? { id: e } : e);
+          const serverPermDel    =  profile.permDeletedPromoted || [];
+          const serverDelPresets =  profile.permDeletedPresets  || [];
+
+          setPinnedFoods((prev) => {
+            const prevStr = JSON.stringify(prev.map((p) => p.id).sort());
+            const nextStr = JSON.stringify(serverPinned.map((p) => p.id).sort());
+            if (prevStr === nextStr) return prev; // no change — skip re-render
+            return serverPinned.map((p) => {
+              if (p.name) return p;
+              const live = foods.find((f) => String(f._id || f.id) === p.id);
+              return live
+                ? { id: p.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 }
+                : p;
+            });
+          });
+          setPermDeletedPinned((prev) => {
+            const prevStr = JSON.stringify([...prev].sort());
+            const nextStr = JSON.stringify([...serverPermDel].sort());
+            return prevStr === nextStr ? prev : serverPermDel;
+          });
+          setPermDeletedPresets((prev) => {
+            const prevStr = JSON.stringify([...prev].sort());
+            const nextStr = JSON.stringify([...serverDelPresets].sort());
+            return prevStr === nextStr ? prev : serverDelPresets;
+          });
+        }
       } catch (err) { console.error("Poll error:", err); }
     }, 30000);
     return () => clearInterval(interval);
