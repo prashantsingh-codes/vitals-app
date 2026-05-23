@@ -950,6 +950,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     store.set("vt_perm_deleted_presets",  permDeletedPresets);
     if (presetSyncTimer.current) clearTimeout(presetSyncTimer.current);
     presetSyncTimer.current = setTimeout(() => {
+      presetSyncTimer.current = null;  // clear so polling knows no save is in flight
       api.saveProfile({
         goal: userGoal, profile: userProfile, targets: TARGETS,
         // Send in legacy format so server stays compatible
@@ -1056,32 +1057,37 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   // ── 30s polling (today only) ──────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (modalOpenRef.current || !isToday || midnightResetInProgress.current || syncTimer.current) return;
+      if (modalOpenRef.current || !isToday || midnightResetInProgress.current) return;
       try {
-        const [log, foods, profile] = await Promise.all([
-          api.getLog(selectedDate),
+        // Always fetch foods + profile for preset sync.
+        // Only fetch log if no log-save is in flight (avoids overwriting mid-type).
+        const [foods, profile] = await Promise.all([
           api.getCustomFoods(),
           api.getProfile(),
         ]);
-        setItems(log.items || {});
-        setWholeEggs(log.wholeEggs || 0);
-        setEggWhites(log.eggWhites || 0);
-        setWater(log.water || 0);
-        setSteps(log.steps || "");
-        const logChecked = log.customFoodChecked || {};
-        const logItems   = log.items || {};
-        const checkedMap = {};
-        foods.forEach((f) => {
-          const fid = String(f._id || f.id);
-          const pinnedKey = "promoted_" + fid;
-          if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
-          else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
-        });
-        setCustomFoodChecked(checkedMap);
+
+        if (!syncTimer.current) {
+          const log = await api.getLog(selectedDate);
+          setItems(log.items || {});
+          setWholeEggs(log.wholeEggs || 0);
+          setEggWhites(log.eggWhites || 0);
+          setWater(log.water || 0);
+          setSteps(log.steps || "");
+          const logChecked = log.customFoodChecked || {};
+          const logItems   = log.items || {};
+          const checkedMap = {};
+          foods.forEach((f) => {
+            const fid = String(f._id || f.id);
+            const pinnedKey = "promoted_" + fid;
+            if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
+            else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+          });
+          setCustomFoodChecked(checkedMap);
+        }
+
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
 
-        // Sync pinned food config — skip if a local save is in flight to avoid
-        // overwriting changes the user just made on this device.
+        // Sync pinned food config — skip only if a preset save is actively in flight.
         if (!presetSyncTimer.current && profile) {
           const serverPinned     = (profile.everPromoted        || []).map((e) => typeof e === "string" ? { id: e } : e);
           const serverPermDel    =  profile.permDeletedPromoted || [];
