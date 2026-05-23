@@ -1270,6 +1270,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         // Permanently remove from preset list — stays in Custom Foods section
         setPermDeletedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
         setTempRemovedPinned((prev) => prev.filter((cid) => cid !== food._customId));
+        // Clear the checked flag so macros are no longer counted
+        setCustomFoodChecked((prev) => {
+          const next = { ...prev, [food._customId]: false };
+          scheduleSave({ items: (() => { const i = { ...items }; delete i[id]; return i; })(), customFoodChecked: next });
+          return next;
+        });
       } else {
         // Temporarily remove — comes back on "Restore presets"
         setTempRemovedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
@@ -1279,7 +1285,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
       setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
     }
     // Clear its count from today's log
-    setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
+    setItems((prev) => { const next = { ...prev }; delete next[id]; if (!food._promoted || mode !== "permanent") scheduleSave({ items: next }); return next; });
   }
 
   // ── Restore presets ───────────────────────────────────────────────────────
