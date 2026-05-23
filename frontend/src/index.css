@@ -31,6 +31,15 @@ body {
   border-radius: 99px;
 }
 
+/* ─── Chat messages: hide scrollbar on all browsers ──────────────────────── */
+.chat-messages::-webkit-scrollbar {
+  display: none;
+}
+.chat-messages {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ─── Number input spinners ───────────────────────────────────────────────── */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
@@ -50,6 +59,17 @@ input[type=number]::-webkit-outer-spin-button {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* FIX 1: smoother up/down bounce for the chat loading dots */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0);   opacity: 0.35; }
+  30%           { transform: translateY(-7px); opacity: 1;   }
+}
+
 /* ─── Utility ─────────────────────────────────────────────────────────────── */
 button {
   -webkit-tap-highlight-color: transparent;
@@ -62,14 +82,4 @@ input, select, textarea {
 a {
   color: var(--accent);
   text-decoration: none;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40%           { transform: translateY(-6px); opacity: 1; }
 }

@@ -22,7 +22,6 @@ async function migrateWeightDates() {
       .toArray();
 
     if (entries.length === 0) {
-      console.log("✅ Weight migration: nothing to fix");
       return;
     }
 

@@ -17,38 +17,33 @@ export async function chat(req, res) {
       parts: [{ text: m.content || m.text || "" }],
     }));
 
-    // Gemini requires conversation to start with a user message
     const firstUserIdx = allContents.findIndex((m) => m.role === "user");
     if (firstUserIdx === -1) return res.status(400).json({ error: "No user message found" });
     const contents = allContents.slice(firstUserIdx);
 
-    let data, response;
-
-    // Retry up to 4 times on rate limit (429) with longer backoff
-    const WAIT = [8000, 15000, 25000]; // 8s, 15s, 25s between attempts
-    for (let attempt = 0; attempt < 4; attempt++) {
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents,
-          }),
-        }
-      );
-      data = await response.json();
-
-      if (response.status === 429 && attempt < 3) {
-        console.log(`Rate limited, attempt ${attempt + 1}/4 — waiting ${WAIT[attempt]}ms...`);
-        await new Promise((r) => setTimeout(r, WAIT[attempt]));
-      } else {
-        break;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents,
+        }),
       }
+    );
+
+    const data = await response.json();
+
+    if (response.status === 429) {
+      // Return a specific code so frontend can show a retry countdown
+      return res.status(429).json({ error: "rate_limited" });
     }
 
-    if (!response.ok) return res.status(response.status).json({ error: data });
+    if (!response.ok) {
+      console.error("Gemini error:", JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
 
     const reply =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
