@@ -885,7 +885,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         changed = true;
         return { id: p.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 };
       });
-      return changed ? next : prev; // avoid re-render if nothing changed
+      if (changed) suppressPresetSave.current = true; // name fill — no need to save back
+      return changed ? next : prev;
     });
   }, [customFoods]);
 
@@ -903,6 +904,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const syncTimer       = useRef(null);
   const presetSyncTimer = useRef(null);
   const presetInitialized       = useRef(false);
+  const suppressPresetSave      = useRef(false);  // true while applying server poll data
   const midnightResetInProgress = useRef(false);
   const modalOpenRef            = useRef(false);
   const isToday = selectedDate === todayStr();
@@ -944,6 +946,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     // Skip the very first run (mount with local-storage values — no changes yet)
     // but DO persist whenever serverHydrated has fired (server data arrived)
     if (!presetInitialized.current) { presetInitialized.current = true; return; }
+    // Skip if this change came from a server poll or hydration — no need to echo back
+    if (suppressPresetSave.current) { suppressPresetSave.current = false; return; }
     store.set("vt_ever_promoted",       pinnedFoods);
     store.set("vt_temp_removed_pinned", tempRemovedPinned);
     store.set("vt_perm_deleted_promoted", permDeletedPinned);
@@ -953,11 +957,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
       presetSyncTimer.current = null;  // clear so polling knows no save is in flight
       api.saveProfile({
         goal: userGoal, profile: userProfile, targets: TARGETS,
-        // Send in legacy format so server stays compatible
         presetFoods:          presetFoods,
         everPromoted:         pinnedFoods,
         permDeletedPromoted:  permDeletedPinned,
         permDeletedPresets:   permDeletedPresets,
+        tempRemovedPinned:    tempRemovedPinned,
       }).catch(console.error);
     }, 1000);
   }, [pinnedFoods, tempRemovedPinned, permDeletedPinned, permDeletedPresets]);
@@ -1054,20 +1058,27 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     loadAll();
   }, [selectedDate]);
 
-  // ── 30s polling (today only) ──────────────────────────────────────────────
+  // ── Stable refs for poll closure — avoids stale captures ───────────────────
+  const selectedDateRef2 = useRef(selectedDate);
+  const isTodayRef       = useRef(isToday);
+  useEffect(() => { selectedDateRef2.current = selectedDate; }, [selectedDate]);
+  useEffect(() => { isTodayRef.current = isToday; }, [isToday]);
+
+  // ── 30s polling ───────────────────────────────────────────────────────────
+  // Preset sync runs every tick (not date-dependent).
+  // Log sync only runs when viewing today and no save is in flight.
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (modalOpenRef.current || !isToday || midnightResetInProgress.current) return;
+      if (modalOpenRef.current || midnightResetInProgress.current) return;
       try {
-        // Always fetch foods + profile for preset sync.
-        // Only fetch log if no log-save is in flight (avoids overwriting mid-type).
         const [foods, profile] = await Promise.all([
           api.getCustomFoods(),
           api.getProfile(),
         ]);
 
-        if (!syncTimer.current) {
-          const log = await api.getLog(selectedDate);
+        // Log sync: today only, not while a save is pending
+        if (isTodayRef.current && !syncTimer.current) {
+          const log = await api.getLog(selectedDateRef2.current);
           setItems(log.items || {});
           setWholeEggs(log.wholeEggs || 0);
           setEggWhites(log.eggWhites || 0);
@@ -1087,39 +1098,69 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
 
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
 
-        // Sync pinned food config — skip only if a preset save is actively in flight.
+        // Preset sync: always runs — pinned foods are not date-specific.
+        // Skip only if a preset save is actively in flight on this device.
         if (!presetSyncTimer.current && profile) {
           const serverPinned     = (profile.everPromoted        || []).map((e) => typeof e === "string" ? { id: e } : e);
           const serverPermDel    =  profile.permDeletedPromoted || [];
+          const serverTempDel    =  profile.tempRemovedPinned   || [];
           const serverDelPresets =  profile.permDeletedPresets  || [];
 
+          // Fill names from live foods for any stub entries
+          const serverPinnedFull = serverPinned.map((p) => {
+            if (p.name) return p;
+            const live = foods.find((f) => String(f._id || f.id) === p.id);
+            return live
+              ? { id: p.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 }
+              : p;
+          });
+
+          // Compare full serialized state — not just IDs — so visibility changes are caught
+          const sortById = (arr) => [...arr].sort((a, b) => (a.id > b.id ? 1 : -1));
+          const pinnedChanged   = JSON.stringify(sortById(serverPinnedFull)) !== JSON.stringify(sortById([]));
+          const permDelChanged  = JSON.stringify([...serverPermDel].sort())  !== "[]";
+          const tempDelChanged  = JSON.stringify([...serverTempDel].sort())  !== "[]";
+          const presetsDChanged = JSON.stringify([...serverDelPresets].sort()) !== "[]";
+
+          // Only suppress the save effect if we're actually going to change state —
+          // otherwise suppressPresetSave stays true forever and swallows the next real save.
+          let willChange = false;
           setPinnedFoods((prev) => {
-            const prevStr = JSON.stringify(prev.map((p) => p.id).sort());
-            const nextStr = JSON.stringify(serverPinned.map((p) => p.id).sort());
-            if (prevStr === nextStr) return prev; // no change — skip re-render
-            return serverPinned.map((p) => {
-              if (p.name) return p;
-              const live = foods.find((f) => String(f._id || f.id) === p.id);
-              return live
-                ? { id: p.id, name: live.name, cal: Number(live.cal) || 0, pro: Number(live.pro) || 0, fat: Number(live.fat) || 0 }
-                : p;
-            });
+            const prevStr = JSON.stringify(sortById(prev));
+            const nextStr = JSON.stringify(sortById(serverPinnedFull));
+            if (prevStr === nextStr) return prev;
+            willChange = true;
+            return serverPinnedFull;
           });
           setPermDeletedPinned((prev) => {
             const prevStr = JSON.stringify([...prev].sort());
             const nextStr = JSON.stringify([...serverPermDel].sort());
-            return prevStr === nextStr ? prev : serverPermDel;
+            if (prevStr === nextStr) return prev;
+            willChange = true;
+            return serverPermDel;
+          });
+          setTempRemovedPinned((prev) => {
+            const prevStr = JSON.stringify([...prev].sort());
+            const nextStr = JSON.stringify([...serverTempDel].sort());
+            if (prevStr === nextStr) return prev;
+            willChange = true;
+            return serverTempDel;
           });
           setPermDeletedPresets((prev) => {
             const prevStr = JSON.stringify([...prev].sort());
             const nextStr = JSON.stringify([...serverDelPresets].sort());
-            return prevStr === nextStr ? prev : serverDelPresets;
+            if (prevStr === nextStr) return prev;
+            willChange = true;
+            return serverDelPresets;
           });
+          // Set suppress flag AFTER the set* calls so it's only true when
+          // React actually has a state change to process (and will run the save effect).
+          if (willChange) suppressPresetSave.current = true;
         }
       } catch (err) { console.error("Poll error:", err); }
     }, 30000);
     return () => clearInterval(interval);
-  }, [selectedDate, isToday]);
+  }, []);  // empty deps — interval never recreated; reads live values via refs
 
   // ── Save helpers ──────────────────────────────────────────────────────────
   function scheduleSave(patch) {

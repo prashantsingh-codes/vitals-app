@@ -14,6 +14,7 @@ export async function getProfile(req, res) {
       permDeletedPromoted:  profile.permDeletedPromoted  ?? [],
       everPromoted:         profile.everPromoted          ?? [],
       permDeletedPresets:   profile.permDeletedPresets   ?? [],
+      tempRemovedPinned:    profile.tempRemovedPinned    ?? [],
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -31,6 +32,7 @@ export async function saveProfile(req, res) {
       permDeletedPromoted,
       everPromoted,
       permDeletedPresets,
+      tempRemovedPinned,
     } = req.body;
 
     const db = getDB();
@@ -46,6 +48,7 @@ export async function saveProfile(req, res) {
           ...(permDeletedPromoted !== undefined && { permDeletedPromoted }),
           ...(everPromoted        !== undefined && { everPromoted }),
           ...(permDeletedPresets  !== undefined && { permDeletedPresets }),
+          ...(tempRemovedPinned   !== undefined && { tempRemovedPinned }),
           updatedAt: new Date(),
         },
       },
