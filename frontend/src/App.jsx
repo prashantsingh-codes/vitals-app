@@ -416,15 +416,12 @@ function AddFoodModal({ onAdd, onClose }) {
   );
 }
 
-function CustomFoodChip({ food, checked, onToggle, onDelete, onPromote, isPromoted }) {
+function CustomFoodChip({ food, onDelete, onPromote, isPromoted }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, background: checked ? "var(--accentBg)" : "var(--surface2)", border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}`, borderRadius: 10, padding: "10px 8px 10px 10px", position: "relative", minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface2)", border: `1px solid var(--border)`, borderRadius: 10, padding: "10px 8px 10px 10px", position: "relative", minWidth: 0 }}>
       <button onClick={onDelete} style={{ position: "absolute", top: 4, right: 4, background: "var(--bg3)", border: "none", borderRadius: 99, width: 18, height: 18, cursor: "pointer", fontSize: 9, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>✕</button>
-      <div onClick={onToggle} style={{ width: 16, height: 16, borderRadius: 5, flexShrink: 0, cursor: "pointer", border: `1.5px solid ${checked ? "var(--accent)" : "var(--border2)"}`, background: checked ? "var(--accent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {checked && <svg viewBox="0 0 10 8" width="10" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 4,7 9,1" /></svg>}
-      </div>
-      <div onClick={onToggle} style={{ flex: 1, cursor: "pointer", minWidth: 0, paddingRight: 22 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: checked ? "var(--accent)" : "var(--text)", wordBreak: "break-word" }}>{food.name}</div>
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 22 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", wordBreak: "break-word" }}>{food.name}</div>
         <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{food.cal}kcal · {food.pro}g P · {food.fat}g F</div>
       </div>
       <button onClick={onPromote} title={isPromoted ? "Already in preset list" : "Add to preset Food list"}
@@ -1395,7 +1392,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <button onClick={() => setShowAddModal(true)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--accentBg)", border: "1.5px dashed var(--accent)", borderRadius: 10, padding: "11px 0", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--accent)", fontFamily: "inherit", marginBottom: customFoods.length ? 12 : 0 }}>➕ Add Custom Food</button>
               {customFoods.length > 0 && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {customFoods.map((f) => <CustomFoodChip key={f.id} food={f} checked={!!customFoodChecked[f.id]} onToggle={() => toggleCustomFood(f.id)} onDelete={() => deleteCustomFood(f.id)} onPromote={() => promoteCustomFood(f)} isPromoted={promotedCustomIds.has(String(f._id||f.id))} />)}
+                  {customFoods.map((f) => <CustomFoodChip key={f.id} food={f} onDelete={() => deleteCustomFood(f.id)} onPromote={() => promoteCustomFood(f)} isPromoted={promotedCustomIds.has(String(f._id||f.id))} />)}
                 </div>
               )}
               {customFoods.length === 0 && (
