@@ -228,15 +228,20 @@ function customFoodToPreset(customFood) {
 
 function calcMacros(items, wholeEggs, eggWhites, customFoods = [], presetFoodList = FOODS) {
   let cal = 0, pro = 0, fat = 0;
+  // Track which custom food IDs are already counted via the pinned preset list
+  const countedAsPreset = new Set();
   presetFoodList.forEach((f) => {
     const count = Number(items[f.id]) || 0;
-    if (f._promoted) { cal += f.cal * count; pro += f.pro * count; fat += f.fat * count; }
-    else { cal += MACROS[f.key].cal * count; pro += MACROS[f.key].pro * count; fat += MACROS[f.key].fat * count; }
+    if (f._promoted) {
+      cal += f.cal * count; pro += f.pro * count; fat += f.fat * count;
+      if (count > 0) countedAsPreset.add(f._customId);
+    } else { cal += MACROS[f.key].cal * count; pro += MACROS[f.key].pro * count; fat += MACROS[f.key].fat * count; }
   });
   cal += wholeEggs * MACROS.wholeEgg.cal + eggWhites * MACROS.eggWhite.cal;
   pro += wholeEggs * MACROS.wholeEgg.pro + eggWhites * MACROS.eggWhite.pro;
   fat += wholeEggs * MACROS.wholeEgg.fat;
-  customFoods.forEach((f) => { if (f.checked) { cal += Number(f.cal)||0; pro += Number(f.pro)||0; fat += Number(f.fat)||0; } });
+  // Skip custom foods already counted above via their pinned preset entry
+  customFoods.forEach((f) => { if (f.checked && !countedAsPreset.has(String(f._id || f.id))) { cal += Number(f.cal)||0; pro += Number(f.pro)||0; fat += Number(f.fat)||0; } });
   return { cal: Math.round(cal), pro: Math.round(pro * 10) / 10, fat: Math.round(fat * 10) / 10 };
 }
 
