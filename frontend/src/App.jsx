@@ -829,6 +829,146 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
   );
 }
 
+// ─── ChatPanel ────────────────────────────────────────────────────────────────
+function ChatPanel({ user, userGoal, userProfile, targets, macros, dark }) {
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: `Hey ${user?.name?.split(" ")[0] || "there"}! 👋 I'm your Vitals AI coach. Ask me anything about nutrition, your targets, food choices, or fitness goals!`,
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef  = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  function buildContext() {
+    const rCal = targets.cal - macros.cal;
+    const rPro = targets.pro - macros.pro;
+    const rFat = targets.fat - macros.fat;
+    const goalLabel = userGoal === "lose" ? "lose weight" : userGoal === "gain" ? "gain muscle" : "maintain weight";
+    const age    = userProfile?.age    || "unknown";
+    const gender = userProfile?.gender || "unknown";
+    const weight = userProfile?.weight || "unknown";
+    const height = userProfile?.height || "unknown";
+    return (
+      `User context: goal=${goalLabel}, age=${age}, gender=${gender}, weight=${weight}kg, height=${height}cm. ` +
+      `Daily targets: ${targets.cal}kcal / ${targets.pro}g protein / ${targets.fat}g fat. ` +
+      `Today so far: ${macros.cal}kcal / ${macros.pro}g protein / ${macros.fat}g fat eaten. ` +
+      `Remaining: ${Math.max(0, rCal)}kcal / ${Math.max(0, rPro)}g protein / ${Math.max(0, rFat)}g fat.`
+    );
+  }
+
+  async function send() {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput("");
+    const userMsg = { role: "user", content: text };
+    const history = [...messages, userMsg];
+    setMessages(history);
+    setLoading(true);
+    try {
+      // Inject context into the first user message only
+      const apiMessages = history.map((m, i) => {
+        if (i === 1 && m.role === "user") {
+          return { ...m, content: `[${buildContext()}]\n\n${m.content}` };
+        }
+        return m;
+      });
+      const { reply } = await api.chat(apiMessages);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't reach the AI right now. Try again in a moment. 🙏" }]);
+    }
+    setLoading(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  }
+
+  const suggestions = [
+    "What should I eat to hit my protein goal?",
+    "How am I doing today?",
+    "Suggest a high-protein Indian meal",
+    "Tips to stay in a calorie deficit",
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)", maxWidth: 680, margin: "0 auto" }}>
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 8 }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+            {m.role === "assistant" && (
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, marginRight: 8, marginTop: 2 }}>🤖</div>
+            )}
+            <div style={{
+              maxWidth: "78%",
+              background: m.role === "user" ? "var(--accent)" : "var(--surface)",
+              color: m.role === "user" ? "#fff" : "var(--text)",
+              borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+              padding: "10px 14px",
+              fontSize: 14,
+              lineHeight: 1.55,
+              border: m.role === "assistant" ? "1px solid var(--border)" : "none",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>🤖</div>
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "18px 18px 18px 4px", padding: "10px 16px", display: "flex", gap: 5, alignItems: "center" }}>
+              {[0,1,2].map((d) => (
+                <div key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--text3)", animation: `bounce 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Quick suggestions — only show when just the greeting is visible */}
+      {messages.length === 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {suggestions.map((s) => (
+            <button key={s} onClick={() => { setInput(s); setTimeout(() => inputRef.current?.focus(), 50); }}
+              style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 20, padding: "5px 12px", fontSize: 12, color: "var(--accent)", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "8px 8px 8px 14px" }}>
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+          onKeyDown={handleKey}
+          placeholder="Ask your AI coach…"
+          rows={1}
+          style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "none", lineHeight: 1.5, maxHeight: 120, overflowY: "auto" }}
+        />
+        <button onClick={send} disabled={!input.trim() || loading}
+          style={{ background: input.trim() && !loading ? "var(--accent)" : "var(--border)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .2s" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MainApp ──────────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal, serverPresetFoods, serverPermDeletedPromoted, serverEverPromoted, serverPermDeletedPresets, serverWaterGoal, serverStepsGoal }) {
   const TARGETS = userTargets || DEFAULT_TARGETS;
@@ -1412,7 +1552,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const sections = ["Milk","Grains & Protein","Paneer","Dal","Soya","My Foods"];
   const pred = weightPrediction();
 
-  const navTabs = [{ id: "tracker", icon: "🥗", label: "Tracker" }, { id: "weight", icon: "⚖️", label: "Weight" }, { id: "health", icon: "❤️", label: "Health" }];
+  const navTabs = [{ id: "tracker", icon: "🥗", label: "Tracker" }, { id: "weight", icon: "⚖️", label: "Weight" }, { id: "health", icon: "❤️", label: "Health" }, { id: "chat", icon: "🤖", label: "AI Coach" }];
 
   if (loadingData) {
     return (
@@ -1567,6 +1707,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     tracker: <TrackerPanel />,
     weight: <WeightPanel wtInput={wtInput} setWtInput={setWtInput} logWeight={logWeight} wtHistory={wtHistory} setWtHistory={setWtHistory} dark={dark} pred={pred} desktop={desktop} />,
     health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} isToday={isToday} serverWaterGoal={serverWaterGoal} serverStepsGoal={serverStepsGoal} />,
+    chat: <ChatPanel user={user} userGoal={userGoal} userProfile={userProfile} targets={TARGETS} macros={macros} dark={dark} />,
   };
 
   function Sidebar() {

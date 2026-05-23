@@ -43,7 +43,8 @@ export const api = {
   updateWeight: (id, value)    => request("PUT",    `/api/weight/${id}`, { value }),
   deleteWeight: (id)           => request("DELETE", `/api/weight/${id}`),
 
-  // Custom foods
+  // Chat / AI
+  chat: (messages) => request("POST", "/api/chat", { messages }),
   getCustomFoods:   ()            => request("GET",    "/api/custom-foods"),
   addCustomFood:    (food)        => request("POST",   "/api/custom-foods", food),
   toggleCustomFood: (id, checked) => request("PATCH",  `/api/custom-foods/${id}`, { checked }),
