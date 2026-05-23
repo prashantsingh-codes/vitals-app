@@ -818,12 +818,23 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   // permDeletedPinned: IDs permanently removed from preset list — never cleared
   // permDeletedPresets: built-in food IDs removed from preset list
   const [pinnedFoods, setPinnedFoods] = useState(() => {
-    const raw = serverEverPromoted || store.get("vt_ever_promoted", []);
+    // serverEverPromoted starts as [] (truthy but empty) — must check length
+    const raw = (serverEverPromoted && serverEverPromoted.length > 0)
+      ? serverEverPromoted
+      : store.get("vt_ever_promoted", []);
     return raw.map((e) => typeof e === "string" ? { id: e } : e);
   });
   const [tempRemovedPinned,  setTempRemovedPinned]  = useState(() => store.get("vt_temp_removed_pinned",  []));
-  const [permDeletedPinned,  setPermDeletedPinned]  = useState(() => serverPermDeletedPromoted || store.get("vt_perm_deleted_promoted", []));
-  const [permDeletedPresets, setPermDeletedPresets] = useState(() => serverPermDeletedPresets  || store.get("vt_perm_deleted_presets",  []));
+  const [permDeletedPinned,  setPermDeletedPinned]  = useState(() =>
+    (serverPermDeletedPromoted && serverPermDeletedPromoted.length > 0)
+      ? serverPermDeletedPromoted
+      : store.get("vt_perm_deleted_promoted", [])
+  );
+  const [permDeletedPresets, setPermDeletedPresets] = useState(() =>
+    (serverPermDeletedPresets && serverPermDeletedPresets.length > 0)
+      ? serverPermDeletedPresets
+      : store.get("vt_perm_deleted_presets",  [])
+  );
 
   // ── Derive presetFoods (never stored separately — always computed) ────────
   // Visible = built-ins (not perm-deleted) + pinned (not perm-deleted, not temp-removed)
@@ -891,6 +902,25 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
   }, []);
+
+  // ── Sync server profile data into local state when it arrives ──────────────
+  // useState initializer runs once — if server data arrives later we need
+  // to explicitly update state to reflect the server's source of truth
+  useEffect(() => {
+    if (serverEverPromoted && serverEverPromoted.length > 0) {
+      setPinnedFoods(serverEverPromoted.map((e) => typeof e === "string" ? { id: e } : e));
+    }
+  }, [serverEverPromoted]);
+  useEffect(() => {
+    if (serverPermDeletedPromoted && serverPermDeletedPromoted.length > 0) {
+      setPermDeletedPinned(serverPermDeletedPromoted);
+    }
+  }, [serverPermDeletedPromoted]);
+  useEffect(() => {
+    if (serverPermDeletedPresets && serverPermDeletedPresets.length > 0) {
+      setPermDeletedPresets(serverPermDeletedPresets);
+    }
+  }, [serverPermDeletedPresets]);
 
   // ── Persist pinned food config to localStorage + server ──────────────────
   useEffect(() => {
