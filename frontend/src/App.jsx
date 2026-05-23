@@ -129,7 +129,7 @@ export default function App() {
         "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700;800&display=swap";
       document.head.appendChild(l);
     }
-if (!document.getElementById("vt-global")) {
+    if (!document.getElementById("vt-global")) {
       const s = document.createElement("style");
       s.id = "vt-global";
       s.textContent = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;transition:background .25s,color .25s}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-4px);opacity:1}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1;background:var(--surface3,#2A2D31);border-radius:4px;cursor:pointer;}.chat-messages::-webkit-scrollbar{display:none}`;
@@ -309,13 +309,13 @@ if (!document.getElementById("vt-global")) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MACROS = {
-  milk: { cal: 85, pro: 6, fat: 3, label: "Milk" },
+  milk: { cal: 78, pro: 5.4, fat: 2.6, label: "Milk" },
   oats: { cal: 111, pro: 3.8, fat: 2.4, label: "Oats" },
   whey: { cal: 140, pro: 25, fat: 1.8, label: "Whey" },
   rice: { cal: 250, pro: 4, fat: 0.5, label: "Rice" },
   paneer50: { cal: 102, pro: 12.5, fat: 4.5, label: "Paneer 50g" },
   paneer100: { cal: 203.8, pro: 25, fat: 9, label: "Paneer 100g" },
-  dal: { cal: 300, pro: 15, fat: 3, label: "Dal" },
+  dal: { cal: 300, pro: 15, fat: 4, label: "Dal" },
   soya: { cal: 175, pro: 25, fat: 1, label: "Soya Chunks" },
   wholeEgg: { cal: 67, pro: 6, fat: 5, label: "Whole Egg" },
   eggWhite: { cal: 17, pro: 3.6, fat: 0, label: "Egg White" },
@@ -2582,12 +2582,20 @@ function ChatPanel({
   dark,
   desktop,
 }) {
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: `Hey ${user?.name?.split(" ")[0] || "there"}! 👋 I'm your Vitals AI coach. Ask me anything about nutrition, your targets, food choices, or fitness goals!`,
-    },
-  ]);
+  const CHAT_KEY = "vt_chat_history";
+  const CHAT_EXPIRY = 30 * 60 * 1000; // 30 minutes in ms
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(CHAT_KEY));
+      if (saved && Date.now() - saved.ts < CHAT_EXPIRY) return saved.messages;
+    } catch {}
+    return [
+      {
+        role: "assistant",
+        content: `Hey ${user?.name?.split(" ")[0] || "there"}! 👋 I'm your Vitals AI coach. Ask me anything about nutrition, your targets, food choices, or fitness goals!`,
+      },
+    ];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -2596,6 +2604,15 @@ function ChatPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        CHAT_KEY,
+        JSON.stringify({ ts: Date.now(), messages }),
+      );
+    } catch {}
+  }, [messages]);
 
   function buildContext() {
     const rCal = targets.cal - macros.cal;
@@ -2809,7 +2826,12 @@ function ChatPanel({
               key={s}
               onClick={() => {
                 setInput(s);
-                setTimeout(() => inputRef.current?.focus(), 50);
+                setTimeout(() => {
+                  if (inputRef.current) {
+                    inputRef.current.focus();
+                    inputRef.current.setSelectionRange(s.length, s.length);
+                  }
+                }, 50);
               }}
               style={{
                 background: "var(--accentBg)",
