@@ -24,8 +24,9 @@ export async function chat(req, res) {
 
     let data, response;
 
-    // Retry up to 3 times on rate limit (429)
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // Retry up to 4 times on rate limit (429) with longer backoff
+    const WAIT = [8000, 15000, 25000]; // 8s, 15s, 25s between attempts
+    for (let attempt = 0; attempt < 4; attempt++) {
       response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
@@ -39,9 +40,9 @@ export async function chat(req, res) {
       );
       data = await response.json();
 
-      if (response.status === 429) {
-        console.log(`Rate limited, attempt ${attempt}/3 — waiting ${3000 * attempt}ms...`);
-        if (attempt < 3) await new Promise((r) => setTimeout(r, 3000 * attempt));
+      if (response.status === 429 && attempt < 3) {
+        console.log(`Rate limited, attempt ${attempt + 1}/4 — waiting ${WAIT[attempt]}ms...`);
+        await new Promise((r) => setTimeout(r, WAIT[attempt]));
       } else {
         break;
       }

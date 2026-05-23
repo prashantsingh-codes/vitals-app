@@ -882,7 +882,7 @@ function ChatPanel({ user, userGoal, userProfile, targets, macros, dark }) {
       const { reply } = await api.chat(apiMessages);
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't reach the AI right now. Try again in a moment. 🙏" }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Gemini is rate limiting right now (429). Wait 30 seconds and try again — this happens on new API keys with low initial limits. 🙏" }]);
     }
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 50);
