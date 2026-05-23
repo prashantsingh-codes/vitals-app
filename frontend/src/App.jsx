@@ -938,8 +938,9 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const syncTimer       = useRef(null);
   const presetSyncTimer = useRef(null);
   const presetInitialized       = useRef(false);
-  const suppressPresetSave      = useRef(false);  // true while applying server poll data
+  const suppressPresetSave      = useRef(false);
   const midnightResetInProgress = useRef(false);
+  const pendingSavePromise      = useRef(null);
   const modalOpenRef            = useRef(false);
   const isToday = selectedDate === todayStr();
 
@@ -1106,8 +1107,12 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   // Log sync only runs when viewing today and no save is in flight.
   const [syncing2, setSyncing2] = useState(false); // separate flag for sync button spinner
 
-  async function syncNow() {
+  async function syncNow(isManual = false) {
     if (modalOpenRef.current || midnightResetInProgress.current) return;
+    // If manually triggered and a save is debouncing, flush it first so we read our own write.
+    if (isManual && pendingSavePromise.current) {
+      await pendingSavePromise.current;
+    }
     try {
       const [foods, profile] = await Promise.all([
         api.getCustomFoods(),
@@ -1216,11 +1221,17 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   function scheduleSave(patch) {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
-    syncTimer.current = setTimeout(async () => {
-      try { await api.saveLog({ ...patch, date: selectedDate }); }
-      catch (e) { console.error("Save error:", e); }
-      setSyncing(false);
-    }, 800);
+    const saveDate = selectedDateRef.current;
+    pendingSavePromise.current = new Promise((resolve) => {
+      syncTimer.current = setTimeout(async () => {
+        syncTimer.current = null;
+        try { await api.saveLog({ ...patch, date: saveDate }); }
+        catch (e) { console.error("Save error:", e); }
+        setSyncing(false);
+        pendingSavePromise.current = null;
+        resolve();
+      }, 800);
+    });
   }
 
   function setItemCount(id, count) {
@@ -1611,7 +1622,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 11, color: "var(--accent)", fontFamily: "inherit", fontWeight: 700 }}>⚙ Goals</button>
-                <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <button onClick={async () => { setSyncing2(true); await syncNow(true); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 </button>
                 <button onClick={() => setDark((d) => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: "var(--text2)" }}>{dark ? "☀️" : "🌙"}</button>
@@ -1632,7 +1643,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
             </div>
             <div style={{ position: "relative" }}>
-              <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={async () => { setSyncing2(true); await syncNow(true); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 {syncing2 ? "Syncing…" : "Sync"}
               </button>
