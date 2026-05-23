@@ -9,6 +9,9 @@ async function request(method, path, body) {
     method,
     headers: {
       "Content-Type": "application/json",
+      // Prevent Vercel's CDN from caching GET responses — stale cache breaks cross-device sync
+      "Cache-Control": "no-cache, no-store",
+      "Pragma": "no-cache",
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     ...(body !== undefined && { body: JSON.stringify(body) }),

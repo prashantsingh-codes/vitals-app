@@ -1,5 +1,13 @@
 import { MongoClient } from "mongodb";
 
+// ── Serverless-safe connection cache ──────────────────────────────────────────
+// On Vercel each cold invocation gets a fresh module scope, but the Node.js
+// global object persists across warm re-uses of the same container.
+// Storing the client on `global` means we reuse the connection instead of
+// opening a new one on every request, which exhausts Atlas M0's connection limit
+// and causes slow/failed polls that break cross-device sync.
+const g = global;
+
 let db = null;
 
 export function getDB() {
@@ -36,17 +44,28 @@ async function migrateWeightDates() {
 }
 
 export async function connectDB() {
+  // Already connected in this container — reuse it
+  if (g._mongoClient && db) return;
+
   if (!process.env.MONGODB_URI) {
     console.warn("⚠️  MONGODB_URI not set — database features disabled");
     return;
   }
   try {
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    db = client.db("vitals");
-    console.log("✅ Connected to MongoDB Atlas");
+    // Reuse an existing client cached on global (warm serverless container)
+    if (!g._mongoClient) {
+      g._mongoClient = new MongoClient(process.env.MONGODB_URI, {
+        maxPoolSize: 10,          // keep a small pool per container
+        serverSelectionTimeoutMS: 5000,  // fail fast instead of hanging
+        socketTimeoutMS: 10000,
+      });
+      await g._mongoClient.connect();
+      console.log("✅ Connected to MongoDB Atlas");
+    }
 
-    // Create indexes
+    db = g._mongoClient.db("vitals");
+
+    // Create indexes (idempotent — safe to run every cold start)
     await db.collection("users").createIndex({ email: 1 }, { unique: true });
     await db.collection("logs").createIndex({ userId: 1, date: 1 }, { unique: true });
     await db.collection("weight").createIndex({ userId: 1, loggedAt: -1 });
@@ -55,5 +74,6 @@ export async function connectDB() {
     await migrateWeightDates();
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
+    g._mongoClient = null; // reset so next request retries
   }
 }
