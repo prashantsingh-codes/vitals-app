@@ -830,12 +830,15 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const presetFoods = [
     ...FOODS.filter((f) => !permDeletedPresets.includes(f.id)),
     ...pinnedFoods
-      .filter((p) => p.name && !permDeletedPinned.includes(p.id) && !tempRemovedPinned.includes(p.id))
+      .filter((p) => !permDeletedPinned.includes(p.id) && !tempRemovedPinned.includes(p.id))
       .map((p) => {
-        // Use freshest data from live customFoods list if available
+        // Always prefer live customFoods data (freshest name/cal/pro/fat)
         const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
-        return customFoodToPreset(live || p);
-      }),
+        const source = live || p;
+        if (!source.name) return null; // skip stubs not yet hydrated
+        return customFoodToPreset(source);
+      })
+      .filter(Boolean),
   ];
 
   // ── Other UI state ────────────────────────────────────────────────────────
@@ -848,6 +851,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const [tipIdx]   = useState(() => Math.floor(Math.random() * HEALTH_TIPS.length));
   const [quoteIdx] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
   const [desktop, setDesktop] = useState(() => window.innerWidth >= 768);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const syncTimer       = useRef(null);
   const presetSyncTimer = useRef(null);
@@ -941,6 +945,8 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
         setCustomFoodChecked({});
         // Pinned foods stay in the list — just unchecked (items already zeroed above)
         midnightResetInProgress.current = false;
+        // Re-fetch today's (empty) log so UI is in sync with server
+        setReloadTrigger((n) => n + 1);
       }
       localStorage.setItem("vt_log_date", today);
     }
@@ -976,8 +982,11 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
-            // Legacy: derive from pinned item count
+            // Legacy v2: pinned item count stored in log.items
             checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+          } else if (f.checked !== undefined) {
+            // Legacy v1: checked stored on food document itself
+            checkedMap[fid] = !!f.checked;
           }
           // else: leave undefined — UI will show unchecked
         });
@@ -998,7 +1007,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
       finally { setLoadingData(false); }
     }
     loadAll();
-  }, [selectedDate]);
+  }, [selectedDate, reloadTrigger]);
 
   // ── 30s polling (today only) ──────────────────────────────────────────────
   useEffect(() => {
@@ -1019,6 +1028,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           const pinnedKey = "promoted_" + fid;
           if (logChecked[fid] !== undefined) checkedMap[fid] = logChecked[fid];
           else if (logItems[pinnedKey] !== undefined) checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
+          else if (f.checked !== undefined) checkedMap[fid] = !!f.checked;
         });
         setCustomFoodChecked(checkedMap);
         setCustomFoods(foods.map((f) => ({ ...f, id: String(f._id || f.id), _id: String(f._id || f.id) })));
