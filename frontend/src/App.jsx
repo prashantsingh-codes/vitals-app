@@ -33,6 +33,8 @@ export default function App() {
   const [serverPermDeletedPromoted, setServerPermDeletedPromoted] = useState([]);
   const [serverEverPromoted, setServerEverPromoted] = useState([]);
   const [serverPermDeletedPresets, setServerPermDeletedPresets] = useState([]);
+  const [serverWaterGoal, setServerWaterGoal] = useState(null);
+  const [serverStepsGoal, setServerStepsGoal] = useState(null);
 
   // Apply theme tokens to CSS variables
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function App() {
     if (!document.getElementById("vt-global")) {
       const s = document.createElement("style");
       s.id = "vt-global";
-      s.textContent = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;transition:background .25s,color .25s}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1;background:var(--surface3,#2A2D31);border-radius:4px;cursor:pointer;}`;
+      s.textContent = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;transition:background .25s,color .25s}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1;background:var(--surface3,#2A2D31);border-radius:4px;cursor:pointer;}`;
       document.head.appendChild(s);
     }
     if (!document.getElementById("vt-favicon")) {
@@ -119,6 +121,8 @@ export default function App() {
       if (data.permDeletedPromoted) { setServerPermDeletedPromoted(data.permDeletedPromoted); }
       if (data.everPromoted) { setServerEverPromoted(data.everPromoted); }
       if (data.permDeletedPresets) { setServerPermDeletedPresets(data.permDeletedPresets); }
+      if (data.waterGoal) { setServerWaterGoal(data.waterGoal); }
+      if (data.stepsGoal) { setServerStepsGoal(data.stepsGoal); }
     }).catch(console.error);
   }, [user]);
 
@@ -162,6 +166,8 @@ export default function App() {
       serverPermDeletedPromoted={serverPermDeletedPromoted}
       serverEverPromoted={serverEverPromoted}
       serverPermDeletedPresets={serverPermDeletedPresets}
+      serverWaterGoal={serverWaterGoal}
+      serverStepsGoal={serverStepsGoal}
     />
   );
 }
@@ -699,10 +705,33 @@ function MiniLineChart({ history, dark, color, unit, yCallback }) {
 }
 
 // ─── HealthPanel ──────────────────────────────────────────────────────────────
-function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userProfile, targets, dark, desktop, tipIdx, isToday }) {
+function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userProfile, targets, dark, desktop, tipIdx, isToday, serverWaterGoal, serverStepsGoal }) {
   const [localSteps, setLocalSteps] = useState(steps);
   const [stepsHistory, setStepsHistory] = useState(() => store.get("vt_steps_history", []));
   const [waterHistory, setWaterHistory] = useState(() => store.get("vt_water_history", []));
+  const [waterGoal, setWaterGoal] = useState(() => store.get("vt_water_goal", 15));
+  const [stepsGoal, setStepsGoal] = useState(() => store.get("vt_steps_goal", 10000));
+
+  // Hydrate from server when profile loads (cross-device sync)
+  useEffect(() => { if (serverWaterGoal) { setWaterGoal(serverWaterGoal); store.set("vt_water_goal", serverWaterGoal); } }, [serverWaterGoal]);
+  useEffect(() => { if (serverStepsGoal) { setStepsGoal(serverStepsGoal); store.set("vt_steps_goal", serverStepsGoal); } }, [serverStepsGoal]);
+
+  function editWaterGoal() {
+    const v = parseInt(prompt("Set water goal (glasses):", waterGoal), 10);
+    if (!isNaN(v) && v > 0) {
+      setWaterGoal(v);
+      store.set("vt_water_goal", v);
+      api.saveProfile({ waterGoal: v }).catch(console.error);
+    }
+  }
+  function editStepsGoal() {
+    const v = parseInt(prompt("Set steps goal:", stepsGoal), 10);
+    if (!isNaN(v) && v > 0) {
+      setStepsGoal(v);
+      store.set("vt_steps_goal", v);
+      api.saveProfile({ stepsGoal: v }).catch(console.error);
+    }
+  }
 
   useEffect(() => { setLocalSteps(steps); }, [steps]);
 
@@ -742,9 +771,12 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
 
         <Card title="Hydration Tracker" icon="💧">
           <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue,#2563EB)" }}>{water}</div>
-            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today · <span style={{ color: "var(--blue,#2563EB)", fontWeight: 600 }}>{waterLitres} L</span> · goal: 15 gl (3.75 L)</div>
-            <ProgBar val={water} max={15} color="#2563EB" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <div style={{ fontSize: 40, fontWeight: 800, color: "var(--blue,#2563EB)" }}>{water}</div>
+              <button onClick={() => { const v = parseInt(prompt("Enter glasses of water:", water) ?? water, 10); if (!isNaN(v) && v >= 0) handleWater(Math.min(25, v)); }} title="Edit water intake" style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, width: 26, height: 26, cursor: "pointer", fontSize: 12, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✏️</button>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>glasses today · <span style={{ color: "var(--blue,#2563EB)", fontWeight: 600 }}>{waterLitres} L</span> · goal: {waterGoal} gl ({(waterGoal * 0.25).toFixed(2)} L) <button onClick={editWaterGoal} title="Edit water goal" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", padding: "0 2px", verticalAlign: "middle" }}>✏️</button></div>
+            <ProgBar val={water} max={waterGoal} color="#2563EB" />
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: waterHistory.length > 1 ? 16 : 0 }}>
             <button onClick={() => handleWater(Math.max(0, water-1))} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 18, color: "var(--text)" }}>−</button>
@@ -773,12 +805,14 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
         )}
 
         <Card title="Steps Tracker" icon="🚶">
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
             <input type="number" value={localSteps} placeholder="Enter steps today" onChange={(e) => { setLocalSteps(e.target.value); handleSteps(e.target.value); }} style={{ flex: 1, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
+            <button onClick={() => { const v = parseInt(prompt("Enter steps:", localSteps) ?? localSteps, 10); if (!isNaN(v) && v >= 0) { setLocalSteps(v); handleSteps(v); } }} title="Edit steps" style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, width: 36, height: 36, cursor: "pointer", fontSize: 14, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✏️</button>
           </div>
+          <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: localSteps > 0 ? 8 : stepsHistory.length > 1 ? 8 : 0 }}>Goal: {stepsGoal.toLocaleString()} steps <button onClick={editStepsGoal} title="Edit steps goal" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", padding: "0 2px", verticalAlign: "middle" }}>✏️</button></div>
           {localSteps > 0 && <div style={{ marginBottom: stepsHistory.length > 1 ? 12 : 0 }}>
-            <ProgBar val={parseInt(localSteps)} max={10000} color="var(--green)" />
-            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>{parseInt(localSteps) >= 10000 ? "🎉 Goal of 10,000 steps reached!" : `${(10000 - parseInt(localSteps)).toLocaleString()} more steps to goal`}</div>
+            <ProgBar val={parseInt(localSteps)} max={stepsGoal} color="var(--green)" />
+            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>{parseInt(localSteps) >= stepsGoal ? `🎉 Goal of ${stepsGoal.toLocaleString()} steps reached!` : `${(stepsGoal - parseInt(localSteps)).toLocaleString()} more steps to goal`}</div>
             <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>≈ {Math.round(parseInt(localSteps) * 0.04)} kcal burned</div>
           </div>}
           {stepsHistory.length > 1 && <>
@@ -798,7 +832,7 @@ function HealthPanel({ water, handleWater, steps, handleSteps, wtHistory, userPr
 }
 
 // ─── MainApp ──────────────────────────────────────────────────────────────────
-function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal, serverPresetFoods, serverPermDeletedPromoted, serverEverPromoted, serverPermDeletedPresets }) {
+function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userProfile, onResetGoal, serverPresetFoods, serverPermDeletedPromoted, serverEverPromoted, serverPermDeletedPresets, serverWaterGoal, serverStepsGoal }) {
   const TARGETS = userTargets || DEFAULT_TARGETS;
 
   // ── Daily log state ───────────────────────────────────────────────────────
@@ -1069,17 +1103,18 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   useEffect(() => { selectedDateRef2.current = selectedDate; }, [selectedDate]);
   useEffect(() => { isTodayRef.current = isToday; }, [isToday]);
 
-  // ── 30s polling ───────────────────────────────────────────────────────────
+  // ── Manual + auto sync ────────────────────────────────────────────────────
   // Preset sync runs every tick (not date-dependent).
   // Log sync only runs when viewing today and no save is in flight.
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (modalOpenRef.current || midnightResetInProgress.current) return;
-      try {
-        const [foods, profile] = await Promise.all([
-          api.getCustomFoods(),
-          api.getProfile(),
-        ]);
+  const [syncing2, setSyncing2] = useState(false); // separate flag for sync button spinner
+
+  async function syncNow() {
+    if (modalOpenRef.current || midnightResetInProgress.current) return;
+    try {
+      const [foods, profile] = await Promise.all([
+        api.getCustomFoods(),
+        api.getProfile(),
+      ]);
 
         // Log sync: today only, not while a save is pending
         if (isTodayRef.current && !syncTimer.current) {
@@ -1172,7 +1207,10 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
           if (willChange) suppressPresetSave.current = true;
         }
       } catch (err) { console.error("Poll error:", err); }
-    }, 10000);
+  }
+
+  useEffect(() => {
+    const interval = setInterval(syncNow, 10000);
     return () => clearInterval(interval);
   }, []);  // empty deps — interval never recreated; reads live values via refs
 
@@ -1265,6 +1303,17 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     // Clear any previous deletion flags so it becomes visible again
     setPermDeletedPinned((prev) => prev.filter((cid) => cid !== sid));
     setTempRemovedPinned((prev) => prev.filter((cid) => cid !== sid));
+    // Auto-check the pinned food immediately
+    const pinnedKey = "promoted_" + sid;
+    setCustomFoodChecked((prev) => {
+      const next = { ...prev, [sid]: true };
+      setItems((prevItems) => {
+        const nextItems = { ...prevItems, [pinnedKey]: 1 };
+        scheduleSave({ items: nextItems, customFoodChecked: next });
+        return nextItems;
+      });
+      return next;
+    });
   }
 
   function deletePresetFood(id, mode) {
@@ -1272,25 +1321,28 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
     if (!food) return;
     if (food._promoted) {
       if (mode === "permanent") {
-        // Permanently remove from preset list — stays in Custom Foods section
         setPermDeletedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
         setTempRemovedPinned((prev) => prev.filter((cid) => cid !== food._customId));
-        // Clear the checked flag so macros are no longer counted
-        setCustomFoodChecked((prev) => {
-          const next = { ...prev, [food._customId]: false };
-          scheduleSave({ items: (() => { const i = { ...items }; delete i[id]; return i; })(), customFoodChecked: next });
-          return next;
-        });
       } else {
         // Temporarily remove — comes back on "Restore presets"
         setTempRemovedPinned((prev) => prev.includes(food._customId) ? prev : [...prev, food._customId]);
       }
+      // Both permanent and temporary: uncheck and remove from today's totals immediately
+      setCustomFoodChecked((prev) => {
+        const next = { ...prev, [food._customId]: false };
+        setItems((prevItems) => {
+          const nextItems = { ...prevItems };
+          delete nextItems[id];
+          scheduleSave({ items: nextItems, customFoodChecked: next });
+          return nextItems;
+        });
+        return next;
+      });
     } else {
       // Built-in hardcoded food — mark as deleted (both modes same for built-ins)
       setPermDeletedPresets((prev) => prev.includes(id) ? prev : [...prev, id]);
+      setItems((prev) => { const next = { ...prev }; delete next[id]; scheduleSave({ items: next }); return next; });
     }
-    // Clear its count from today's log
-    setItems((prev) => { const next = { ...prev }; delete next[id]; if (!food._promoted || mode !== "permanent") scheduleSave({ items: next }); return next; });
   }
 
   // ── Restore presets ───────────────────────────────────────────────────────
@@ -1495,7 +1547,7 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
   const panels = {
     tracker: <TrackerPanel />,
     weight: <WeightPanel wtInput={wtInput} setWtInput={setWtInput} logWeight={logWeight} wtHistory={wtHistory} setWtHistory={setWtHistory} dark={dark} pred={pred} desktop={desktop} />,
-    health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} isToday={isToday} />,
+    health: <HealthPanel water={water} handleWater={handleWater} steps={steps} handleSteps={handleSteps} wtHistory={wtHistory} userProfile={userProfile} targets={TARGETS} dark={dark} desktop={desktop} tipIdx={tipIdx} isToday={isToday} serverWaterGoal={serverWaterGoal} serverStepsGoal={serverStepsGoal} />,
   };
 
   function Sidebar() {
@@ -1550,6 +1602,9 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {syncing && <span style={{ fontSize: 11, color: "var(--text3)" }}>saving…</span>}
+              <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 14, color: syncing2 ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
               <button onClick={onResetGoal} style={{ background: "var(--accentBg)", border: "1px solid var(--accent)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 11, color: "var(--accent)", fontFamily: "inherit", fontWeight: 700 }}>⚙ Goals</button>
               <button onClick={() => setDark((d) => !d)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: "var(--text2)" }}>{dark ? "☀️" : "🌙"}</button>
               <button onClick={onLogout} title="Logout" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 40, padding: "6px 10px", cursor: "pointer", fontSize: 16, color: "var(--text3)", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
@@ -1567,6 +1622,10 @@ function MainApp({ user, onLogout, dark, setDark, userTargets, userGoal, userPro
               <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>Welcome Back, {user.name}</div>
             </div>
             {syncing && <span style={{ fontSize: 12, color: "var(--text3)" }}>☁️ Saving…</span>}
+            <button onClick={async () => { setSyncing2(true); await syncNow(); setSyncing2(false); }} title="Sync now" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, color: syncing2 ? "var(--accent)" : "var(--text2)", display: "flex", alignItems: "center", gap: 6 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing2 ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              {syncing2 ? "Syncing…" : "Sync"}
+            </button>
           </div>
         )}
         {panels[activeTab]}

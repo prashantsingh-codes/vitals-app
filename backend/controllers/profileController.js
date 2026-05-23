@@ -15,6 +15,8 @@ export async function getProfile(req, res) {
       everPromoted:         profile.everPromoted          ?? [],
       permDeletedPresets:   profile.permDeletedPresets   ?? [],
       tempRemovedPinned:    profile.tempRemovedPinned    ?? [],
+      waterGoal:            profile.waterGoal            ?? 15,
+      stepsGoal:            profile.stepsGoal            ?? 10000,
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -33,6 +35,8 @@ export async function saveProfile(req, res) {
       everPromoted,
       permDeletedPresets,
       tempRemovedPinned,
+      waterGoal,
+      stepsGoal,
     } = req.body;
 
     const db = getDB();
@@ -49,6 +53,8 @@ export async function saveProfile(req, res) {
           ...(everPromoted        !== undefined && { everPromoted }),
           ...(permDeletedPresets  !== undefined && { permDeletedPresets }),
           ...(tempRemovedPinned   !== undefined && { tempRemovedPinned }),
+          ...(waterGoal           !== undefined && { waterGoal }),
+          ...(stepsGoal           !== undefined && { stepsGoal }),
           updatedAt: new Date(),
         },
       },
