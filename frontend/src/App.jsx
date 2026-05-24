@@ -2675,7 +2675,6 @@ function ChatPanel({
       ]);
     }
     setLoading(false);
-    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   function handleKey(e) {
