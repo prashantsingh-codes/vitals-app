@@ -2598,6 +2598,13 @@ function ChatPanel({
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [winHeight, setWinHeight] = useState(window.innerHeight);
+
+useEffect(() => {
+  const fn = () => setWinHeight(window.innerHeight);
+  window.addEventListener("resize", fn);
+  return () => window.removeEventListener("resize", fn);
+}, []);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -2686,7 +2693,9 @@ function ChatPanel({
   // the browser chrome on mobile, then subtract:
   //   • mobile: top header (~80px) + bottom nav (~60px) + page padding (~20px)
   //   • desktop: header bar (~100px) + page padding (~56px)
-  const chatHeight = desktop ? "calc(100vh - 156px)" : "calc(100dvh - 180px)";
+  const chatHeight = desktop
+    ? "calc(100vh - 156px)"
+    : `${winHeight - 175}px`;
 
   return (
     // FIX: outer wrapper uses computed height so input never goes behind the nav
