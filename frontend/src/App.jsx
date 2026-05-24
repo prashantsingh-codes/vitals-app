@@ -2573,6 +2573,7 @@ function HealthPanel({
 
 // ─── ChatPanel ────────────────────────────────────────────────────────────────
 // FIX: receives `desktop` prop so it can adjust layout for mobile vs desktop
+// REPLACE WITH:
 function ChatPanel({
   user,
   userGoal,
@@ -2581,7 +2582,8 @@ function ChatPanel({
   macros,
   dark,
   desktop,
-}) {
+  wtHistory,
+})  {
   const CHAT_KEY = "vt_chat_history";
   const CHAT_EXPIRY = 30 * 60 * 1000;
   const [messages, setMessages] = useState(() => {
@@ -2634,7 +2636,11 @@ function ChatPanel({
           : "maintain weight";
     const age = userProfile?.age || "unknown";
     const gender = userProfile?.gender || "unknown";
-    const weight = userProfile?.weight || "unknown";
+    // REPLACE WITH:
+    const latestWeight = wtHistory && wtHistory.length > 0
+      ? wtHistory[wtHistory.length - 1].value
+      : userProfile?.weight || "unknown";
+    const weight = latestWeight;
     const height = userProfile?.height || "unknown";
     return (
       `User context: goal=${goalLabel}, age=${age}, gender=${gender}, weight=${weight}kg, height=${height}cm. ` +
@@ -4239,7 +4245,7 @@ function MainApp({
         serverStepsGoal={serverStepsGoal}
       />
     ),
-    chat: (
+chat: (
       <ChatPanel
         user={user}
         userGoal={userGoal}
@@ -4248,6 +4254,7 @@ function MainApp({
         macros={macros}
         dark={dark}
         desktop={desktop}
+        wtHistory={wtHistory}
       />
     ),
   };
