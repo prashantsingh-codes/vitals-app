@@ -2583,7 +2583,7 @@ function ChatPanel({
   desktop,
 }) {
   const CHAT_KEY = "vt_chat_history";
-  const CHAT_EXPIRY = 30 * 60 * 1000; // 30 minutes in ms
+  const CHAT_EXPIRY = 30 * 60 * 1000;
   const [messages, setMessages] = useState(() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem(CHAT_KEY));
@@ -2600,11 +2600,12 @@ function ChatPanel({
   const [loading, setLoading] = useState(false);
   const [winHeight, setWinHeight] = useState(window.innerHeight);
 
-useEffect(() => {
-  const fn = () => setWinHeight(window.innerHeight);
-  window.addEventListener("resize", fn);
-  return () => window.removeEventListener("resize", fn);
-}, []);
+  useEffect(() => {
+    const fn = () => setWinHeight(window.innerHeight);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -2643,10 +2644,13 @@ useEffect(() => {
     );
   }
 
-  async function send() {
+   async function send() {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     const userMsg = { role: "user", content: text };
     const history = [...messages, userMsg];
     setMessages(history);
@@ -2688,17 +2692,11 @@ useEffect(() => {
     "Tips to stay in a calorie deficit",
   ];
 
-  // FIX: On mobile the bottom nav is ~60px tall. We need the chat panel to sit
-  // above it. We use `100dvh` (dynamic viewport height) which correctly excludes
-  // the browser chrome on mobile, then subtract:
-  //   • mobile: top header (~80px) + bottom nav (~60px) + page padding (~20px)
-  //   • desktop: header bar (~100px) + page padding (~56px)
   const chatHeight = desktop
     ? "calc(100vh - 156px)"
     : `${winHeight - 175}px`;
 
   return (
-    // FIX: outer wrapper uses computed height so input never goes behind the nav
     <div
       style={{
         display: "flex",
@@ -2708,8 +2706,6 @@ useEffect(() => {
         margin: "0 auto",
       }}
     >
-      {/* ── Messages ─────────────────────────────────────────── */}
-      {/* FIX: hide scrollbar on desktop via className; keep it functional */}
       <div
         className="chat-messages"
         style={{
@@ -2719,9 +2715,8 @@ useEffect(() => {
           flexDirection: "column",
           gap: 12,
           paddingBottom: 8,
-          // Hide scrollbar cross-browser
-          msOverflowStyle: "none", // IE / Edge
-          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
         }}
       >
         {messages.map((m, i) => (
@@ -2820,7 +2815,6 @@ useEffect(() => {
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Quick suggestions ─────────────────────────────────── */}
       {messages.length === 1 && (
         <div
           style={{
@@ -2860,30 +2854,26 @@ useEffect(() => {
         </div>
       )}
 
-      {/* ── Input box ─────────────────────────────────────────── */}
-      {/* FIX: flex-shrink:0 ensures the input is never squashed or hidden */}
       <div
         style={{
           flexShrink: 0,
           display: "flex",
           gap: 8,
-          alignItems: "center", // FIX: center vertically so placeholder is centred
+          alignItems: "flex-end",
           background: "var(--surface)",
           border: "1px solid var(--border)",
           borderRadius: 16,
-          padding: "0 8px 0 14px", // FIX: symmetric vertical padding handled by min-height
-          minHeight: 52, // FIX: fixed height keeps the bar stable
+          padding: "6px 8px 6px 14px",
+          minHeight: 48,
         }}
       >
-        {/* FIX: textarea vertically centred; placeholder centred via line-height trick */}
         <textarea
           ref={inputRef}
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
-            // Auto-grow but cap at 120px
             e.target.style.height = "auto";
-            e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+            e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px";
           }}
           onKeyDown={handleKey}
           placeholder="Ask your AI coach…"
@@ -2897,13 +2887,13 @@ useEffect(() => {
             color: "var(--text)",
             fontFamily: "inherit",
             resize: "none",
-            // FIX: lineHeight + height together vertically centre the placeholder
-            lineHeight: "36px",
-            height: 36,
-            maxHeight: 120,
+            lineHeight: "1.5",
+            height: "auto",
+            minHeight: 36,
+            maxHeight: 80,
             overflowY: "auto",
-            alignSelf: "center",
-            padding: 0,
+            alignSelf: "flex-end",
+            padding: "6px 0",
           }}
         />
         <button
@@ -2911,7 +2901,7 @@ useEffect(() => {
           disabled={!input.trim() || loading}
           style={{
             flexShrink: 0,
-            alignSelf: "center", // FIX: keep button vertically centred
+            alignSelf: "flex-end",
             background:
               input.trim() && !loading ? "var(--accent)" : "var(--border)",
             border: "none",
