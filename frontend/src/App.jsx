@@ -2676,7 +2676,7 @@ function ChatPanel({
         {
           role: "assistant",
           content:
-            "Gemini is rate limiting right now (429). Wait 30 seconds and try again — this happens on new API keys with low initial limits. 🙏",
+            "Gemini is rate limiting right now (429). Wait 30 seconds and try again 🙏",
         },
       ]);
     }
