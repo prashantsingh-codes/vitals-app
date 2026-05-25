@@ -3089,6 +3089,10 @@ function MainApp({
   const stepsRef = useRef(steps);
   const customFoodCheckedRef = useRef(customFoodChecked);
   const selectedDateRef = useRef(selectedDate);
+  const pinnedFoodsRef = useRef(pinnedFoods);
+  const permDeletedPinnedRef = useRef(permDeletedPinned);
+  const tempRemovedPinnedRef = useRef(tempRemovedPinned);
+  const permDeletedPresetsRef = useRef(permDeletedPresets);
   useEffect(() => {
     customFoodsRef.current = customFoods;
   }, [customFoods]);
@@ -3113,6 +3117,18 @@ function MainApp({
   useEffect(() => {
     selectedDateRef.current = selectedDate;
   }, [selectedDate]);
+  useEffect(() => {
+    pinnedFoodsRef.current = pinnedFoods;
+  }, [pinnedFoods]);
+  useEffect(() => {
+    permDeletedPinnedRef.current = permDeletedPinned;
+  }, [permDeletedPinned]);
+  useEffect(() => {
+    tempRemovedPinnedRef.current = tempRemovedPinned;
+  }, [tempRemovedPinned]);
+  useEffect(() => {
+    permDeletedPresetsRef.current = permDeletedPresets;
+  }, [permDeletedPresets]);
 
   const macros = calcMacros(
     items,
@@ -3189,12 +3205,32 @@ function MainApp({
             console.error("Midnight flush error:", e);
           }
         }
+        // Flush any pending pinned-foods save so newly pinned items aren't lost
+        if (presetSyncTimer.current) {
+          clearTimeout(presetSyncTimer.current);
+          presetSyncTimer.current = null;
+          try {
+            await api.saveProfile({
+              goal: userGoal,
+              profile: userProfile,
+              targets: TARGETS,
+              everPromoted: pinnedFoodsRef.current,
+              permDeletedPromoted: permDeletedPinnedRef.current,
+              permDeletedPresets: permDeletedPresetsRef.current,
+              tempRemovedPinned: tempRemovedPinnedRef.current,
+            });
+          } catch (e) {
+            console.error("Midnight preset flush error:", e);
+          }
+        }
         setItems({});
         setWholeEggs(0);
         setEggWhites(0);
         setWater(0);
         setSteps("");
         setCustomFoodChecked({});
+        // Reset temp-removed pins so they reappear on the new day
+        setTempRemovedPinned([]);
         midnightResetInProgress.current = false;
       }
       localStorage.setItem("vt_log_date", today);
@@ -3224,6 +3260,8 @@ function MainApp({
         foods.forEach((f) => {
           const fid = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
+          // Skip temp-removed pinned foods — hidden in UI so must not count in totals.
+          if (tempRemovedPinned.includes(fid)) return;
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
@@ -3300,6 +3338,8 @@ function MainApp({
         foods.forEach((f) => {
           const fid = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
+          // Skip temp-removed pinned foods — hidden in UI so must not count in totals.
+          if (tempRemovedPinned.includes(fid)) return;
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
