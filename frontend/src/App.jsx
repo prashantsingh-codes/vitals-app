@@ -63,6 +63,12 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const DEFAULT_TARGETS = { cal: 1800, pro: 130, fat: 55 };
 
 export default function App() {
@@ -683,7 +689,7 @@ function Card({ title, icon, children, defaultOpen = true }) {
   );
 }
 
-function FoodChip({ food, count, onCountChange, onDelete }) {
+function FoodChip({ food, count, onCountChange, onDelete, isToday }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const FOOD_LABEL_MAP = {
     milk1: "Milk 1",
@@ -702,7 +708,7 @@ function FoodChip({ food, count, onCountChange, onDelete }) {
       : `${m.cal}kcal · ${m.pro}g P · ${m.fat}g F`;
   const checked = count > 0;
 
-  if (food._promoted && confirmDelete) {
+  if (food._promoted && isToday && confirmDelete) {
     return (
       <div
         style={{
@@ -897,9 +903,13 @@ function FoodChip({ food, count, onCountChange, onDelete }) {
       </div>
       <MiniStepper val={count} onChange={onCountChange} />
       <button
-        onClick={() =>
-          food._promoted ? setConfirmDelete(true) : onDelete("today")
-        }
+        onClick={() => {
+          if (food._promoted && isToday) {
+            setConfirmDelete(true);
+          } else {
+            onDelete(food._promoted ? "unpin" : "today");
+          }
+        }}
         style={{
           position: "absolute",
           top: 4,
@@ -1175,7 +1185,7 @@ function AddFoodModal({ onAdd, onClose }) {
   );
 }
 
-function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted }) {
+function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isToday }) {
   return (
     <div
       style={{
@@ -1190,29 +1200,31 @@ function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted }) {
         minWidth: 0,
       }}
     >
-      <button
-        onClick={onDelete}
-        title="Remove"
-        style={{
-          position: "absolute",
-          top: 4,
-          right: 4,
-          background: "var(--bg3)",
-          border: "none",
-          borderRadius: 99,
-          width: 18,
-          height: 18,
-          cursor: "pointer",
-          fontSize: 9,
-          color: "var(--text3)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 2,
-        }}
-      >
-        ✕
-      </button>
+      {isToday && (
+        <button
+          onClick={onDelete}
+          title="Remove"
+          style={{
+            position: "absolute",
+            top: 4,
+            right: 4,
+            background: "var(--bg3)",
+            border: "none",
+            borderRadius: 99,
+            width: 18,
+            height: 18,
+            cursor: "pointer",
+            fontSize: 9,
+            color: "var(--text3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2,
+          }}
+        >
+          ✕
+        </button>
+      )}
       <div
         onClick={onToggle}
         style={{
@@ -3056,12 +3068,17 @@ function MainApp({
   const presetFoods = [
     ...FOODS.filter((f) => !permDeletedPresets.includes(f.id)),
     ...pinnedFoods
-      .filter(
-        (p) =>
-          p.name &&
+      .filter((p) => {
+        if (!p.name) return false;
+        const isCheckedOnDate = (items && Number(items["promoted_" + p.id]) > 0) || (customFoodChecked && customFoodChecked[p.id]);
+        const isPinActiveOnDate =
+          (!p.pinnedAtDate || selectedDate >= p.pinnedAtDate) &&
+          (!p.unpinnedAtDate || selectedDate < p.unpinnedAtDate) &&
+          (!p.deletedAtDate || selectedDate < p.deletedAtDate) &&
           !permDeletedPinned.includes(p.id) &&
-          !(selectedDate === todayStr() && tempRemovedPinned.includes(p.id)),
-      )
+          !(selectedDate === todayStr() && tempRemovedPinned.includes(p.id));
+        return isCheckedOnDate || isPinActiveOnDate;
+      })
       .map((p) => {
         const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
         return customFoodToPreset(live || p);
@@ -3577,31 +3594,55 @@ function MainApp({
     const sid = String(id);
     setCustomFoods((prev) => prev.filter((f) => String(f.id) !== sid));
     api.deleteCustomFood(sid).catch(console.error);
-    setPinnedFoods((prev) => prev.filter((p) => p.id !== sid));
+    setPinnedFoods((prev) =>
+      prev.map((p) =>
+        p.id === sid
+          ? { ...p, deletedAtDate: selectedDate }
+          : p
+      )
+    );
     setPermDeletedPinned((prev) => prev.filter((cid) => cid !== sid));
     setTempRemovedPinned((prev) => prev.filter((cid) => cid !== sid));
   }
 
   function promoteCustomFood(customFood) {
     const sid = String(customFood._id || customFood.id);
-    if (
-      pinnedFoods.some((p) => p.id === sid) &&
+    const activePin = pinnedFoods.find((p) => p.id === sid);
+    const isPinCurrentlyActive = activePin && 
+      (!activePin.pinnedAtDate || selectedDate >= activePin.pinnedAtDate) &&
+      (!activePin.unpinnedAtDate || selectedDate < activePin.unpinnedAtDate) &&
+      (!activePin.deletedAtDate || selectedDate < activePin.deletedAtDate) &&
       !permDeletedPinned.includes(sid) &&
-      !tempRemovedPinned.includes(sid)
-    )
-      return;
+      !(selectedDate === todayStr() && tempRemovedPinned.includes(sid));
+
+    if (isPinCurrentlyActive) return;
+
     const snapshot = {
       id: sid,
       name: customFood.name,
       cal: Number(customFood.cal) || 0,
       pro: Number(customFood.pro) || 0,
       fat: Number(customFood.fat) || 0,
+      pinnedAtDate: selectedDate,
     };
-    setPinnedFoods((prev) =>
-      prev.some((p) => p.id === sid)
-        ? prev.map((p) => (p.id === sid ? snapshot : p))
-        : [...prev, snapshot],
-    );
+
+    setPinnedFoods((prev) => {
+      if (prev.some((p) => p.id === sid)) {
+        return prev.map((p) =>
+          p.id === sid
+            ? {
+                ...p,
+                ...snapshot,
+                pinnedAtDate: p.pinnedAtDate || selectedDate,
+                unpinnedAtDate: undefined,
+                deletedAtDate: undefined,
+              }
+            : p
+        );
+      }
+      return [...prev, snapshot];
+    });
+
     setPermDeletedPinned((prev) => prev.filter((cid) => cid !== sid));
     setTempRemovedPinned((prev) => prev.filter((cid) => cid !== sid));
     const pinnedKey = "promoted_" + sid;
@@ -3627,9 +3668,17 @@ function MainApp({
         setTempRemovedPinned((prev) =>
           prev.filter((cid) => cid !== food._customId),
         );
-      } else {
+      } else if (mode === "today") {
         setTempRemovedPinned((prev) =>
           prev.includes(food._customId) ? prev : [...prev, food._customId],
+        );
+      } else if (mode === "unpin") {
+        setPinnedFoods((prev) =>
+          prev.map((p) =>
+            p.id === food._customId
+              ? { ...p, unpinnedAtDate: selectedDate }
+              : p
+          )
         );
       }
       setCustomFoodChecked((prev) => {
@@ -3657,19 +3706,26 @@ function MainApp({
 
   function resetPresetFoods() {
     setPermDeletedPresets([]);
-    setTempRemovedPinned([]);
-    api
-      .saveProfile({
-        goal: userGoal,
-        profile: userProfile,
-        targets: TARGETS,
-        presetFoods: presetFoods,
-        everPromoted: pinnedFoods,
-        permDeletedPromoted: permDeletedPinned,
-        permDeletedPresets: [],
-        tempRemovedPinned: [],
-      })
-      .catch(console.error);
+    if (selectedDate === todayStr()) {
+      setTempRemovedPinned([]);
+      setPinnedFoods((prev) =>
+        prev.map((p) =>
+          p.unpinnedAtDate === todayStr()
+            ? { ...p, unpinnedAtDate: undefined }
+            : p
+        )
+      );
+    } else {
+      const tomorrow = addDays(selectedDate, 1);
+      setPinnedFoods((prev) =>
+        prev.map((p) => {
+          if (p.unpinnedAtDate && p.unpinnedAtDate <= selectedDate) {
+            return { ...p, unpinnedAtDate: tomorrow };
+          }
+          return p;
+        })
+      );
+    }
   }
 
   async function logWeight() {
@@ -3748,9 +3804,34 @@ function MainApp({
 
   const promotedCustomIds = new Set(
     pinnedFoods
-      .filter((p) => !permDeletedPinned.includes(p.id))
+      .filter((p) => {
+        const isPinActiveOnDate =
+          (!p.pinnedAtDate || selectedDate >= p.pinnedAtDate) &&
+          (!p.unpinnedAtDate || selectedDate < p.unpinnedAtDate) &&
+          (!p.deletedAtDate || selectedDate < p.deletedAtDate) &&
+          !permDeletedPinned.includes(p.id) &&
+          !(selectedDate === todayStr() && tempRemovedPinned.includes(p.id));
+        return isPinActiveOnDate;
+      })
       .map((p) => p.id),
   );
+  const activeCustomFoods = [
+    ...customFoods.filter((f) => {
+      const pin = pinnedFoods.find((p) => p.id === String(f.id));
+      return !pin || !pin.deletedAtDate || selectedDate < pin.deletedAtDate;
+    }),
+    ...pinnedFoods
+      .filter((p) => p.deletedAtDate && selectedDate < p.deletedAtDate)
+      .map((p) => ({
+        id: p.id,
+        _id: p.id,
+        name: p.name,
+        cal: p.cal,
+        pro: p.pro,
+        fat: p.fat,
+      }))
+  ];
+
   const sections = [
     "Milk",
     "Grains & Protein",
@@ -3990,6 +4071,7 @@ function MainApp({
                             count={Number(items[f.id]) || 0}
                             onCountChange={(count) => setItemCount(f.id, count)}
                             onDelete={(mode) => deletePresetFood(f.id, mode)}
+                            isToday={isToday}
                           />
                         ))}
                     </div>
@@ -4073,12 +4155,12 @@ function MainApp({
                   fontWeight: 700,
                   color: "var(--accent)",
                   fontFamily: "inherit",
-                  marginBottom: customFoods.length ? 12 : 0,
+                  marginBottom: activeCustomFoods.length ? 12 : 0,
                 }}
               >
                 ➕ Add Custom Food
               </button>
-              {customFoods.length > 0 && (
+              {activeCustomFoods.length > 0 && (
                 <div
                   style={{
                     display: "grid",
@@ -4086,7 +4168,7 @@ function MainApp({
                     gap: 8,
                   }}
                 >
-                  {customFoods.map((f) => (
+                  {activeCustomFoods.map((f) => (
                     <CustomFoodChip
                       key={f.id}
                       food={{ ...f, checked: !!customFoodChecked[f.id] }}
@@ -4094,11 +4176,12 @@ function MainApp({
                       onDelete={() => deleteCustomFood(f.id)}
                       onPromote={() => promoteCustomFood(f)}
                       isPromoted={promotedCustomIds.has(String(f._id || f.id))}
+                      isToday={isToday}
                     />
                   ))}
                 </div>
               )}
-              {customFoods.length === 0 && (
+              {activeCustomFoods.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
