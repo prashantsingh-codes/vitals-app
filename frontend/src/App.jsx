@@ -1175,15 +1175,15 @@ function AddFoodModal({ onAdd, onClose }) {
   );
 }
 
-function CustomFoodChip({ food, onDelete, onPromote, isPromoted }) {
+function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
-        background: "var(--surface2)",
-        border: `1px solid var(--border)`,
+        background: food.checked ? "var(--accentBg)" : "var(--surface2)",
+        border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`,
         borderRadius: 10,
         padding: "10px 8px 10px 10px",
         position: "relative",
@@ -1192,6 +1192,7 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted }) {
     >
       <button
         onClick={onDelete}
+        title="Remove"
         style={{
           position: "absolute",
           top: 4,
@@ -1212,13 +1213,43 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted }) {
       >
         ✕
       </button>
-      <div style={{ flex: 1, minWidth: 0, paddingRight: 22 }}>
+      <div
+        onClick={onToggle}
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: 5,
+          flexShrink: 0,
+          cursor: "pointer",
+          border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
+          background: food.checked ? "var(--accent)" : "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {food.checked && (
+          <svg
+            viewBox="0 0 10 8"
+            width="10"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="1,4 4,7 9,1" />
+          </svg>
+        )}
+      </div>
+      <div onClick={onToggle} style={{ flex: 1, cursor: "pointer", minWidth: 0, paddingRight: 22 }}>
         <div
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "var(--text)",
+            color: food.checked ? "var(--accent)" : "var(--text)",
             wordBreak: "break-word",
+            lineHeight: 1.3,
           }}
         >
           {food.name}
@@ -3029,7 +3060,7 @@ function MainApp({
         (p) =>
           p.name &&
           !permDeletedPinned.includes(p.id) &&
-          !tempRemovedPinned.includes(p.id),
+          !(selectedDate === todayStr() && tempRemovedPinned.includes(p.id)),
       )
       .map((p) => {
         const live = customFoods.find((cf) => String(cf._id || cf.id) === p.id);
@@ -3241,7 +3272,29 @@ function MainApp({
   }, []);
 
   useEffect(() => {
+    let active = true;
     async function loadAll() {
+      // Flush any pending saves for the previous date immediately before loading new data!
+      if (syncTimer.current) {
+        clearTimeout(syncTimer.current);
+        syncTimer.current = null;
+        setSyncing(false);
+        const prevDate = selectedDateRef.current;
+        try {
+          await api.saveLog({
+            date: prevDate,
+            items: itemsRef.current,
+            wholeEggs: wholeEggsRef.current,
+            eggWhites: eggWhitesRef.current,
+            water: waterRef.current,
+            steps: stepsRef.current,
+            customFoodChecked: customFoodCheckedRef.current,
+          });
+        } catch (e) {
+          console.error("Flush on date change error:", e);
+        }
+      }
+
       setLoadingData(true);
       try {
         const [log, weight, foods] = await Promise.all([
@@ -3249,6 +3302,7 @@ function MainApp({
           api.getWeight(),
           api.getCustomFoods(),
         ]);
+        if (!active) return;
         setItems(log.items || {});
         setWholeEggs(log.wholeEggs || 0);
         setEggWhites(log.eggWhites || 0);
@@ -3260,8 +3314,8 @@ function MainApp({
         foods.forEach((f) => {
           const fid = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
-          // Skip temp-removed pinned foods — hidden in UI so must not count in totals.
-          if (tempRemovedPinned.includes(fid)) return;
+          // Skip temp-removed pinned foods only when viewing today's log — hidden in UI so must not count in totals.
+          if (selectedDate === todayStr() && tempRemovedPinned.includes(fid)) return;
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
@@ -3297,10 +3351,13 @@ function MainApp({
       } catch (err) {
         console.error("Load error:", err);
       } finally {
-        setLoadingData(false);
+        if (active) setLoadingData(false);
       }
     }
     loadAll();
+    return () => {
+      active = false;
+    };
   }, [selectedDate]);
 
   const selectedDateRef2 = useRef(selectedDate);
@@ -3657,9 +3714,18 @@ function MainApp({
     const first = wtHistory[0].value,
       last = wtHistory[wtHistory.length - 1].value;
     const isLosing = userGoal === "lose";
+    
+    // Calculate actual elapsed days between first and last entry
+    const firstEntry = wtHistory[0];
+    const lastEntry = wtHistory[wtHistory.length - 1];
+    const d1 = new Date(firstEntry.date);
+    const d2 = new Date(lastEntry.date);
+    const diffTime = Math.abs(d2 - d1);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // avoid division by 0
+
     const rate = isLosing
-      ? (first - last) / wtHistory.length
-      : (last - first) / wtHistory.length;
+      ? (first - last) / diffDays
+      : (last - first) / diffDays;
     if (rate <= 0)
       return isLosing
         ? "No downward trend yet — keep going!"
@@ -4023,7 +4089,8 @@ function MainApp({
                   {customFoods.map((f) => (
                     <CustomFoodChip
                       key={f.id}
-                      food={f}
+                      food={{ ...f, checked: !!customFoodChecked[f.id] }}
+                      onToggle={() => toggleCustomFood(f.id)}
                       onDelete={() => deleteCustomFood(f.id)}
                       onPromote={() => promoteCustomFood(f)}
                       isPromoted={promotedCustomIds.has(String(f._id || f.id))}
