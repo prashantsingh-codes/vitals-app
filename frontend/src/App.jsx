@@ -1189,100 +1189,83 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: "var(--surface2)",
-        border: "1px solid var(--border)",
-        borderRadius: 10,
-        padding: "10px 8px 10px 10px",
         position: "relative",
-        minWidth: 0,
+        background: isPromoted ? "rgba(76,175,125,.05)" : "var(--surface2)",
+        border: `1px solid ${isPromoted ? "var(--green)" : "var(--border)"}`,
+        borderRadius: 10,
+        padding: "10px 36px 10px 10px",
         minHeight: 60,
+        minWidth: 0,
         boxSizing: "border-box",
       }}
     >
-      <div 
-        style={{ 
-          flex: 1, 
-          cursor: "default", 
-          minWidth: 0, 
-          paddingRight: 32
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: "var(--text)",
-            wordBreak: "break-word",
-            lineHeight: 1.3,
-          }}
-        >
-          {food.name}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
-          {food.cal}kcal · {food.pro}g P · {food.fat}g F
-        </div>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 4,
-          right: 4,
-          bottom: 4,
-          width: 28,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: isToday ? "space-between" : "center",
-          zIndex: 2,
-        }}
-      >
-        {isToday && (
-          <button
-            onClick={onDelete}
-            title="Remove"
-            style={{
-              background: "var(--bg3)",
-              border: "none",
-              borderRadius: 99,
-              width: 18,
-              height: 18,
-              cursor: "pointer",
-              fontSize: 9,
-              color: "var(--text3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            ✕
-          </button>
-        )}
+      {/* ✕ — absolute top-right, same as FoodChip */}
+      {isToday && (
         <button
-          onClick={onPromote}
-          title={
-            isPromoted ? "Automatically check / Already pinned" : "Pin and check custom food"
-          }
+          onClick={onDelete}
+          title="Remove"
           style={{
-            background: isPromoted ? "var(--greenBg)" : "var(--surface)",
-            border: `1px solid ${isPromoted ? "var(--green)" : "var(--border2)"}`,
-            borderRadius: 6,
-            width: 28,
-            height: 28,
+            position: "absolute",
+            top: 4,
+            right: 4,
+            background: "var(--bg3)",
+            border: "none",
+            borderRadius: 99,
+            width: 18,
+            height: 18,
             cursor: "pointer",
-            fontSize: 14,
-            color: isPromoted ? "var(--green)" : "var(--text3)",
+            fontSize: 9,
+            color: "var(--text3)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flexShrink: 0,
+            zIndex: 2,
           }}
         >
-          📌
+          ✕
         </button>
+      )}
+
+      {/* Name + macros — text from top, no checkbox */}
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: isPromoted ? "var(--green)" : "var(--text)",
+          wordBreak: "break-word",
+          lineHeight: 1.3,
+        }}
+      >
+        {food.name}
       </div>
+      <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+        {food.cal}kcal · {food.pro}g P · {food.fat}g F
+      </div>
+
+      {/* 📌 — absolute bottom-right, never overlaps ✕ */}
+      <button
+        onClick={onPromote}
+        title={isPromoted ? "Already pinned" : "Pin to food preset list"}
+        style={{
+          position: "absolute",
+          bottom: 6,
+          right: 4,
+          background: isPromoted ? "var(--greenBg)" : "var(--surface)",
+          border: `1px solid ${isPromoted ? "var(--green)" : "var(--border2)"}`,
+          borderRadius: 6,
+          width: 28,
+          height: 28,
+          cursor: isPromoted ? "default" : "pointer",
+          fontSize: 14,
+          color: isPromoted ? "var(--green)" : "var(--text3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+        }}
+      >
+        📌
+      </button>
     </div>
   );
 }
