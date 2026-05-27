@@ -3362,6 +3362,10 @@ function MainApp({
 
   async function syncNow(isManual = false) {
     if (modalOpenRef.current || midnightResetInProgress.current) return;
+    // Skip background polling if there is a pending or in-flight save to avoid race conditions and stale overwrites
+    if (!isManual && (syncTimer.current || pendingSavePromise.current || presetSyncTimer.current)) {
+      return;
+    }
     if (isManual && pendingSavePromise.current) {
       await pendingSavePromise.current;
     }
@@ -3371,28 +3375,52 @@ function MainApp({
         api.getProfile(),
       ]);
 
-      if (isTodayRef.current && !syncTimer.current) {
+      if (isTodayRef.current && !syncTimer.current && !pendingSavePromise.current) {
         const log = await api.getLog(selectedDateRef2.current);
-        setItems(log.items || {});
-        setWholeEggs(log.wholeEggs || 0);
-        setEggWhites(log.eggWhites || 0);
-        setWater(log.water || 0);
-        setSteps(log.steps || "");
+        
+        const nextItems = log.items || {};
+        if (JSON.stringify(itemsRef.current) !== JSON.stringify(nextItems)) {
+          setItems(nextItems);
+        }
+        
+        const nextWholeEggs = log.wholeEggs || 0;
+        if (wholeEggsRef.current !== nextWholeEggs) {
+          setWholeEggs(nextWholeEggs);
+        }
+        
+        const nextEggWhites = log.eggWhites || 0;
+        if (eggWhitesRef.current !== nextEggWhites) {
+          setEggWhites(nextEggWhites);
+        }
+        
+        const nextWater = log.water || 0;
+        if (waterRef.current !== nextWater) {
+          setWater(nextWater);
+        }
+        
+        const nextSteps = log.steps || "";
+        if (stepsRef.current !== nextSteps) {
+          setSteps(nextSteps);
+        }
+
         const logChecked = log.customFoodChecked || {};
         const logItems = log.items || {};
         const checkedMap = {};
         foods.forEach((f) => {
           const fid = String(f._id || f.id);
           const pinnedKey = "promoted_" + fid;
-          // Skip temp-removed pinned foods — hidden in UI so must not count in totals.
-          if (tempRemovedPinned.includes(fid)) return;
+          // Skip temp-removed pinned foods — hidden in UI so must not count in totals. Use ref to avoid stale closure.
+          if (tempRemovedPinnedRef.current.includes(fid)) return;
           if (logChecked[fid] !== undefined) {
             checkedMap[fid] = logChecked[fid];
           } else if (logItems[pinnedKey] !== undefined) {
             checkedMap[fid] = Number(logItems[pinnedKey]) > 0;
           }
         });
-        setCustomFoodChecked(checkedMap);
+
+        if (JSON.stringify(customFoodCheckedRef.current) !== JSON.stringify(checkedMap)) {
+          setCustomFoodChecked(checkedMap);
+        }
       }
 
       setCustomFoods(
@@ -3465,7 +3493,7 @@ function MainApp({
   }
 
   useEffect(() => {
-    const interval = setInterval(syncNow, 10000);
+    const interval = setInterval(syncNow, 15000);
     return () => clearInterval(interval);
   }, []);
 
