@@ -1185,15 +1185,15 @@ function AddFoodModal({ onAdd, onClose }) {
   );
 }
 
-function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isToday }) {
+function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
-        background: food.checked ? "var(--accentBg)" : "var(--surface2)",
-        border: `1px solid ${food.checked ? "var(--accent)" : "var(--border)"}`,
+        background: "var(--surface2)",
+        border: "1px solid var(--border)",
         borderRadius: 10,
         padding: "10px 8px 10px 10px",
         position: "relative",
@@ -1225,42 +1225,10 @@ function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isTod
           ✕
         </button>
       )}
-      {isPromoted && (
-        <div
-          onClick={onToggle}
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 5,
-            flexShrink: 0,
-            cursor: "pointer",
-            border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
-            background: food.checked ? "var(--accent)" : "transparent",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {food.checked && (
-            <svg
-              viewBox="0 0 10 8"
-              width="10"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="1,4 4,7 9,1" />
-            </svg>
-          )}
-        </div>
-      )}
       <div 
-        onClick={isPromoted ? onToggle : undefined} 
         style={{ 
           flex: 1, 
-          cursor: isPromoted ? "pointer" : "default", 
+          cursor: "default", 
           minWidth: 0, 
           paddingRight: 22 
         }}
@@ -1269,7 +1237,7 @@ function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isTod
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: food.checked ? "var(--accent)" : "var(--text)",
+            color: "var(--text)",
             wordBreak: "break-word",
             lineHeight: 1.3,
           }}

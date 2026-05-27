@@ -197,17 +197,29 @@ async function run() {
 
     // Helper function injections for DOM manipulation in browser context
     await page.evaluate(() => {
+      window.findCard = (cardTitle) => {
+        const spans = Array.from(document.querySelectorAll('span'));
+        const titleSpan = spans.find(s => s.textContent.trim().toUpperCase() === cardTitle.toUpperCase());
+        if (!titleSpan) return null;
+        let parent = titleSpan.parentElement;
+        while (parent && parent.tagName === 'DIV') {
+          if (parent.style.background === 'var(--surface)' || parent.style.borderRadius === '12px' || parent.style.border === '1px solid var(--border)') {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+        return null;
+      };
+
       window.findFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        const card = window.findCard('Food');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
       };
 
       window.findCustomFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
@@ -269,24 +281,42 @@ async function run() {
     });
     await new Promise(r => setTimeout(r, 1500));
 
-    // Verify checkbox appears immediately upon pinning
-    console.log("🔍 Verifying that the checkbox appears immediately when pinned...");
-    const isCheckboxVisibleAfterPin = await page.evaluate(() => {
+    // Verify checkbox does NOT appear on CustomFoodChip upon pinning
+    console.log("🔍 Verifying that the checkbox does NOT appear on the custom food chip even when pinned...");
+    const isCheckboxHiddenOnCustomAfterPin = await page.evaluate(() => {
       const shakeChip = window.findCustomFoodChip('Automated Shake');
       if (shakeChip) {
         const childDivs = Array.from(shakeChip.children).filter(el => el.tagName === 'DIV');
-        return childDivs.length === 2;
+        return childDivs.length === 1;
       }
       return false;
     });
-    console.log(`🛡️ Is Custom Food checkbox visible after pinning? ${isCheckboxVisibleAfterPin ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+    console.log(`🛡️ Is Custom Food chip checkbox still hidden after pinning? ${isCheckboxHiddenOnCustomAfterPin ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
 
-    console.log("✅ Checking the custom food on Yesterday...");
+    // Verify preset chip exists and contains checkbox
+    console.log("🔍 Verifying that the pinned preset chip contains the checkbox...");
+    const presetContainsCheckbox = await page.evaluate(() => {
+      const shakePreset = window.findFoodChip('Automated Shake');
+      if (shakePreset) {
+        const row = shakePreset.children[0];
+        if (row) {
+          const checkbox = row.children[0];
+          return checkbox && checkbox.tagName === 'DIV' && checkbox.style.width === '16px';
+        }
+      }
+      return false;
+    });
+    console.log(`🛡️ Does the Food Presets card chip contain the checkbox? ${presetContainsCheckbox ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
+    console.log("✅ Checking the custom food preset chip on Yesterday...");
     await page.evaluate(() => {
-      const shakeChip = window.findCustomFoodChip('Automated Shake');
-      if (shakeChip) {
-        const checkDiv = Array.from(shakeChip.querySelectorAll('div')).find(d => d.textContent.includes('Automated Shake'));
-        if (checkDiv) checkDiv.click();
+      const shakePreset = window.findFoodChip('Automated Shake');
+      if (shakePreset) {
+        const row = shakePreset.children[0];
+        if (row) {
+          const checkbox = row.children[0];
+          if (checkbox) checkbox.click();
+        }
       }
     });
     await new Promise(r => setTimeout(r, 1500));
@@ -337,17 +367,29 @@ async function run() {
 
     // Reinject helpers on Today's date page context
     await page.evaluate(() => {
+      window.findCard = (cardTitle) => {
+        const spans = Array.from(document.querySelectorAll('span'));
+        const titleSpan = spans.find(s => s.textContent.trim().toUpperCase() === cardTitle.toUpperCase());
+        if (!titleSpan) return null;
+        let parent = titleSpan.parentElement;
+        while (parent && parent.tagName === 'DIV') {
+          if (parent.style.background === 'var(--surface)' || parent.style.borderRadius === '12px' || parent.style.border === '1px solid var(--border)') {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+        return null;
+      };
+
       window.findFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        const card = window.findCard('Food');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
       };
 
       window.findCustomFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
@@ -424,17 +466,29 @@ async function run() {
 
     // Reinject helpers on Yesterday page context
     await page.evaluate(() => {
+      window.findCard = (cardTitle) => {
+        const spans = Array.from(document.querySelectorAll('span'));
+        const titleSpan = spans.find(s => s.textContent.trim().toUpperCase() === cardTitle.toUpperCase());
+        if (!titleSpan) return null;
+        let parent = titleSpan.parentElement;
+        while (parent && parent.tagName === 'DIV') {
+          if (parent.style.background === 'var(--surface)' || parent.style.borderRadius === '12px' || parent.style.border === '1px solid var(--border)') {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+        return null;
+      };
+
       window.findFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        const card = window.findCard('Food');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
       };
 
       window.findCustomFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
@@ -476,17 +530,29 @@ async function run() {
 
     // Reinject helpers on Tomorrow page context
     await page.evaluate(() => {
+      window.findCard = (cardTitle) => {
+        const spans = Array.from(document.querySelectorAll('span'));
+        const titleSpan = spans.find(s => s.textContent.trim().toUpperCase() === cardTitle.toUpperCase());
+        if (!titleSpan) return null;
+        let parent = titleSpan.parentElement;
+        while (parent && parent.tagName === 'DIV') {
+          if (parent.style.background === 'var(--surface)' || parent.style.borderRadius === '12px' || parent.style.border === '1px solid var(--border)') {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+        return null;
+      };
+
       window.findFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        const card = window.findCard('Food');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
       };
 
       window.findCustomFoodChip = (foodName) => {
-        const cards = Array.from(document.querySelectorAll('div'));
-        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
         return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
