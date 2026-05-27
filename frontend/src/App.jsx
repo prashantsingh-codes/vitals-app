@@ -1225,36 +1225,46 @@ function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isTod
           ✕
         </button>
       )}
-      <div
-        onClick={onToggle}
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 5,
-          flexShrink: 0,
-          cursor: "pointer",
-          border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
-          background: food.checked ? "var(--accent)" : "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+      {isPromoted && (
+        <div
+          onClick={onToggle}
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 5,
+            flexShrink: 0,
+            cursor: "pointer",
+            border: `1.5px solid ${food.checked ? "var(--accent)" : "var(--border2)"}`,
+            background: food.checked ? "var(--accent)" : "transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {food.checked && (
+            <svg
+              viewBox="0 0 10 8"
+              width="10"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="1,4 4,7 9,1" />
+            </svg>
+          )}
+        </div>
+      )}
+      <div 
+        onClick={isPromoted ? onToggle : undefined} 
+        style={{ 
+          flex: 1, 
+          cursor: isPromoted ? "pointer" : "default", 
+          minWidth: 0, 
+          paddingRight: 22 
         }}
       >
-        {food.checked && (
-          <svg
-            viewBox="0 0 10 8"
-            width="10"
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="1,4 4,7 9,1" />
-          </svg>
-        )}
-      </div>
-      <div onClick={onToggle} style={{ flex: 1, cursor: "pointer", minWidth: 0, paddingRight: 22 }}>
         <div
           style={{
             fontSize: 12,
@@ -1281,8 +1291,6 @@ function CustomFoodChip({ food, onToggle, onDelete, onPromote, isPromoted, isTod
           borderRadius: 6,
           width: 28,
           height: 28,
-          marginTop: 14,
-          alignSelf: "flex-end",
           cursor: isPromoted ? "default" : "pointer",
           fontSize: 14,
           color: isPromoted ? "var(--green)" : "var(--text3)",
@@ -3662,11 +3670,12 @@ function MainApp({
     if (!food) return;
     if (food._promoted) {
       if (mode === "permanent") {
-        setPermDeletedPinned((prev) =>
-          prev.includes(food._customId) ? prev : [...prev, food._customId],
-        );
-        setTempRemovedPinned((prev) =>
-          prev.filter((cid) => cid !== food._customId),
+        setPinnedFoods((prev) =>
+          prev.map((p) =>
+            p.id === food._customId
+              ? { ...p, unpinnedAtDate: selectedDate }
+              : p
+          )
         );
       } else if (mode === "today") {
         setTempRemovedPinned((prev) =>

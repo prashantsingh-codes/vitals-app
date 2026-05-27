@@ -195,40 +195,95 @@ async function run() {
     await page.waitForFunction(() => !document.body.textContent.includes("Add Food"), { timeout: 5000 });
     await new Promise(r => setTimeout(r, 1000));
 
-    // 7. Verify the Custom Food Delete Button (✕) is hidden on back date!
+    // Helper function injections for DOM manipulation in browser context
+    await page.evaluate(() => {
+      window.findFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
+      };
+
+      window.findCustomFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+      };
+    });
+
+    // 7. Verify Custom Food Chip Checkbox Visibility (Hidden when Unpinned)
+    console.log("🔍 Verifying that the custom food checkbox is hidden when unpinned...");
+    const isCheckboxHiddenInitially = await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        const childDivs = Array.from(shakeChip.children).filter(el => el.tagName === 'DIV');
+        return childDivs.length === 1;
+      }
+      return false;
+    });
+    console.log(`🛡️ Is Custom Food checkbox hidden initially (unpinned)? ${isCheckboxHiddenInitially ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
+    // Try clicking text in unpinned state to verify it does not toggle check
+    console.log("🔍 Verifying that clicking the text of an unpinned custom food does not toggle check...");
+    await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        const textDiv = Array.from(shakeChip.querySelectorAll('div')).find(d => d.textContent.includes('Automated Shake'));
+        if (textDiv) textDiv.click();
+      }
+    });
+    await new Promise(r => setTimeout(r, 500));
+
+    const remainsUnchecked = await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        return !shakeChip.style.background.includes('accentBg');
+      }
+      return false;
+    });
+    console.log(`🛡️ Did unpinned custom food remain unchecked after text click? ${remainsUnchecked ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
+    // Verify delete button is hidden on back date
     console.log("🔍 Verifying that the custom food delete button is hidden on back date...");
     const isDeleteHiddenOnBackDate = await page.evaluate(() => {
-      const cards = Array.from(document.querySelectorAll('div'));
-      const myCustomFoodsCard = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes('Automated Shake'));
-      if (myCustomFoodsCard) {
-        const divs = Array.from(myCustomFoodsCard.querySelectorAll('div'));
-        const shakeChip = divs.filter(d => d.textContent.includes('Automated Shake') && d.textContent.includes('kcal'))
-                              .sort((a, b) => a.textContent.length - b.textContent.length)[0];
-        if (shakeChip) {
-          const deleteBtn = Array.from(shakeChip.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
-          return !deleteBtn;
-        }
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        const deleteBtn = Array.from(shakeChip.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
+        return !deleteBtn;
       }
       return false;
     });
     console.log(`🛡️ Is Custom Food delete button hidden on Yesterday? ${isDeleteHiddenOnBackDate ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
 
-    // Pin the custom food & Check it on Yesterday
+    // 8. Pin the custom food (promoting it)
     console.log("📌 Pinning the custom food (promoting it)...");
     await page.evaluate(() => {
-      const chips = Array.from(document.querySelectorAll('div')).filter(d => d.textContent.includes('Automated Shake'));
-      const shakeChip = chips.find(c => c.textContent.includes('Automated Shake') && c.textContent.includes('kcal'));
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
       if (shakeChip) {
-        const pinBtn = shakeChip.querySelector('button[title*="preset"]');
+        const pinBtn = Array.from(shakeChip.querySelectorAll('button')).find(b => b.textContent.includes('📌'));
         if (pinBtn) pinBtn.click();
       }
     });
     await new Promise(r => setTimeout(r, 1500));
 
+    // Verify checkbox appears immediately upon pinning
+    console.log("🔍 Verifying that the checkbox appears immediately when pinned...");
+    const isCheckboxVisibleAfterPin = await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        const childDivs = Array.from(shakeChip.children).filter(el => el.tagName === 'DIV');
+        return childDivs.length === 2;
+      }
+      return false;
+    });
+    console.log(`🛡️ Is Custom Food checkbox visible after pinning? ${isCheckboxVisibleAfterPin ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
     console.log("✅ Checking the custom food on Yesterday...");
     await page.evaluate(() => {
-      const chips = Array.from(document.querySelectorAll('div')).filter(d => d.textContent.includes('Automated Shake'));
-      const shakeChip = chips.find(c => c.textContent.includes('Automated Shake') && c.textContent.includes('kcal'));
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
       if (shakeChip) {
         const checkDiv = Array.from(shakeChip.querySelectorAll('div')).find(d => d.textContent.includes('Automated Shake'));
         if (checkDiv) checkDiv.click();
@@ -239,11 +294,10 @@ async function run() {
     await page.screenshot({ path: path.join(artifactDir, 'step5_yesterday_pinned_checked.png') });
     console.log("📸 Step 5: Captured Yesterday showing pinned and checked food.");
 
-    // 8. Test Direct Unpinning on Back Date (No options dialog shown)
+    // 9. Test Direct Unpinning on Back Date (No options dialog shown)
     console.log("✕ Clicking cross button on Preset item to verify direct unpinning on back date...");
     await page.evaluate(() => {
-      const chips = Array.from(document.querySelectorAll('div')).filter(d => d.textContent.includes('Automated Shake'));
-      const shakePreset = chips.find(c => c.textContent.includes('Automated Shake') && c.textContent.includes('MY FOOD'));
+      const shakePreset = window.findFoodChip('Automated Shake');
       if (shakePreset) {
         const deleteBtn = Array.from(shakePreset.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
         if (deleteBtn) deleteBtn.click();
@@ -259,7 +313,7 @@ async function run() {
     console.log(`🛡️ Was unpinned directly without showing deletion options dialog? ${isUnpinnedDirectly ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
     await page.screenshot({ path: path.join(artifactDir, 'step5_unpinned_directly.png') });
 
-    // 9. Test Day-Scoped Restoration on Back Date
+    // 10. Test Day-Scoped Restoration on Back Date
     console.log("↺ Restoring preset foods on Yesterday...");
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
@@ -270,7 +324,7 @@ async function run() {
     await page.screenshot({ path: path.join(artifactDir, 'step5_restored_preset.png') });
     console.log("📸 Restored preset food successfully.");
 
-    // 10. Switch back to Today and verify clean slate (pinned but unchecked, and delete button IS visible)
+    // 11. Switch back to Today and verify clean slate (pinned but unchecked, and delete button IS visible)
     console.log("📅 Switching back to Today to verify clean slate...");
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
@@ -281,10 +335,28 @@ async function run() {
     await page.waitForFunction(() => !document.body.textContent.includes("Editing past log"), { timeout: 5000 });
     await new Promise(r => setTimeout(r, 1500));
 
+    // Reinject helpers on Today's date page context
+    await page.evaluate(() => {
+      window.findFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
+      };
+
+      window.findCustomFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+      };
+    });
+
     // Verify that the delete button IS visible on Today's date!
     const isDeleteVisibleOnToday = await page.evaluate(() => {
-      const chips = Array.from(document.querySelectorAll('div')).filter(d => d.textContent.includes('Automated Shake'));
-      const shakeChip = chips.find(c => c.textContent.includes('Automated Shake') && c.textContent.includes('kcal'));
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
       if (shakeChip) {
         const deleteBtn = Array.from(shakeChip.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
         return !!deleteBtn;
@@ -295,6 +367,139 @@ async function run() {
 
     await page.screenshot({ path: path.join(artifactDir, 'step6_today_clean_slate.png') });
     console.log("📸 Step 6: Captured Today's Dashboard showing clean slate & delete button presence verified.");
+
+    // 12. Test Date-Scoped Permanent Deletion from Today
+    console.log("🗑️ Performing Date-Scoped Permanent Deletion from Today...");
+    await page.evaluate(() => {
+      const shakePreset = window.findFoodChip('Automated Shake');
+      if (shakePreset) {
+        const deleteBtn = Array.from(shakePreset.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
+        if (deleteBtn) deleteBtn.click();
+      }
+    });
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Click "Delete permanently" inside the confirm delete dialog
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const permDeleteBtn = buttons.find(b => b.textContent.includes('Delete permanently'));
+      if (permDeleteBtn) permDeleteBtn.click();
+    });
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Verify that the preset has disappeared from Today's presets
+    const isGoneFromPresetsToday = await page.evaluate(() => {
+      const shakePreset = window.findFoodChip('Automated Shake');
+      return !shakePreset;
+    });
+    console.log(`🛡️ Is Preset gone from Today's Food Presets list? ${isGoneFromPresetsToday ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
+    // Click "Delete" (✕) on the custom food chip itself in "My Custom Foods" on Today to delete the custom food item!
+    console.log("🗑️ Deleting the Custom Food item itself from Today's My Custom Foods...");
+    await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      if (shakeChip) {
+        const deleteBtn = Array.from(shakeChip.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
+        if (deleteBtn) deleteBtn.click();
+      }
+    });
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Verify that the custom food has disappeared from Today's "My Custom Foods" list
+    const isGoneFromCustomFoodsToday = await page.evaluate(() => {
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      return !shakeChip;
+    });
+    console.log(`🛡️ Is Custom Food gone from Today's "My Custom Foods" list? ${isGoneFromCustomFoodsToday ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+
+    // Switch date to Yesterday and verify it is STILL active as preset and visible in custom foods list there!
+    console.log("📅 Switching to Yesterday to verify the preset remains active there...");
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const dateBtn = buttons.find(b => b.textContent.match(/^\d{2}\/\d{2}$/));
+      if (dateBtn) dateBtn.click();
+    });
+    await page.waitForFunction(() => document.body.textContent.includes("Editing past log"), { timeout: 5000 });
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Reinject helpers on Yesterday page context
+    await page.evaluate(() => {
+      window.findFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
+      };
+
+      window.findCustomFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+      };
+    });
+
+    const isActiveOnYesterday = await page.evaluate(() => {
+      const shakePreset = window.findFoodChip('Automated Shake');
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      return !!shakePreset && !!shakeChip;
+    });
+    console.log(`🛡️ Is the preset and custom food still active on Yesterday? ${isActiveOnYesterday ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+    await page.screenshot({ path: path.join(artifactDir, 'step7_yesterday_active_retained.png') });
+
+    // Switch to tomorrow and verify it is not present in presets and custom foods
+    console.log("📅 Switching back to Today and then checking tomorrow...");
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const todayBtn = buttons.find(b => b.textContent.trim() === '← Back to Today' || b.textContent.trim() === 'Today');
+      if (todayBtn) todayBtn.click();
+    });
+    await page.waitForFunction(() => !document.body.textContent.includes("Editing past log"), { timeout: 5000 });
+    await new Promise(r => setTimeout(r, 1000));
+
+    console.log("📅 Clicking tomorrow's tab in DatePickerBar...");
+    await page.evaluate(() => {
+      const tomorrowStr = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${mm}/${dd}`;
+      };
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const tomorrowBtn = buttons.find(b => b.textContent.trim() === tomorrowStr());
+      if (tomorrowBtn) tomorrowBtn.click();
+    });
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Reinject helpers on Tomorrow page context
+    await page.evaluate(() => {
+      window.findFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('Food') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.flexDirection === 'column' && d.textContent.includes(foodName));
+      };
+
+      window.findCustomFoodChip = (foodName) => {
+        const cards = Array.from(document.querySelectorAll('div'));
+        const card = cards.find(c => c.textContent.includes('My Custom Foods') && c.textContent.includes(foodName));
+        if (!card) return null;
+        const divs = Array.from(card.querySelectorAll('div'));
+        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+      };
+    });
+
+    const isGoneFromTomorrow = await page.evaluate(() => {
+      const shakePreset = window.findFoodChip('Automated Shake');
+      const shakeChip = window.findCustomFoodChip('Automated Shake');
+      return !shakePreset && !shakeChip;
+    });
+    console.log(`🛡️ Is the preset and custom food completely gone on Tomorrow? ${isGoneFromTomorrow ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+    await page.screenshot({ path: path.join(artifactDir, 'step8_tomorrow_clean_deleted.png') });
 
     console.log("🎉 All automated test cases successfully completed!");
   } catch (err) {
@@ -311,3 +516,4 @@ async function run() {
 }
 
 run();
+
