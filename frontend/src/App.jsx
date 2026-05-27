@@ -3634,12 +3634,8 @@ function MainApp({
     if (!food) return;
     if (food._promoted) {
       if (mode === "permanent") {
-        setPinnedFoods((prev) =>
-          prev.map((p) =>
-            p.id === food._customId
-              ? { ...p, unpinnedAtDate: selectedDate }
-              : p
-          )
+        setPermDeletedPinned((prev) =>
+          prev.includes(food._customId) ? prev : [...prev, food._customId]
         );
       } else if (mode === "today") {
         setTempRemovedPinned((prev) =>
