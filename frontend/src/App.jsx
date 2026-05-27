@@ -1190,8 +1190,8 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
     <div
       style={{
         position: "relative",
-        background: isPromoted ? "rgba(76,175,125,.05)" : "var(--surface2)",
-        border: `1px solid ${isPromoted ? "var(--green)" : "var(--border)"}`,
+        background: "var(--surface2)",
+        border: "1px solid var(--border)",
         borderRadius: 10,
         padding: "10px 36px 10px 10px",
         minHeight: 60,
@@ -1231,7 +1231,7 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
         style={{
           fontSize: 12,
           fontWeight: 600,
-          color: isPromoted ? "var(--green)" : "var(--text)",
+          color: "var(--text)",
           wordBreak: "break-word",
           lineHeight: 1.3,
         }}
