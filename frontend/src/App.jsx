@@ -1198,39 +1198,16 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
         padding: "10px 8px 10px 10px",
         position: "relative",
         minWidth: 0,
+        minHeight: 60,
+        boxSizing: "border-box",
       }}
     >
-      {isToday && (
-        <button
-          onClick={onDelete}
-          title="Remove"
-          style={{
-            position: "absolute",
-            top: 4,
-            right: 4,
-            background: "var(--bg3)",
-            border: "none",
-            borderRadius: 99,
-            width: 18,
-            height: 18,
-            cursor: "pointer",
-            fontSize: 9,
-            color: "var(--text3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-          }}
-        >
-          ✕
-        </button>
-      )}
       <div 
         style={{ 
           flex: 1, 
           cursor: "default", 
           minWidth: 0, 
-          paddingRight: 22 
+          paddingRight: 32
         }}
       >
         <div
@@ -1248,28 +1225,64 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
           {food.cal}kcal · {food.pro}g P · {food.fat}g F
         </div>
       </div>
-      <button
-        onClick={onPromote}
-        title={
-          isPromoted ? "Already in preset list" : "Add to preset Food list"
-        }
+      <div
         style={{
-          background: isPromoted ? "var(--greenBg)" : "var(--surface)",
-          border: `1px solid ${isPromoted ? "var(--green)" : "var(--border2)"}`,
-          borderRadius: 6,
+          position: "absolute",
+          top: 4,
+          right: 4,
+          bottom: 4,
           width: 28,
-          height: 28,
-          cursor: isPromoted ? "default" : "pointer",
-          fontSize: 14,
-          color: isPromoted ? "var(--green)" : "var(--text3)",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
+          justifyContent: isToday ? "space-between" : "center",
+          zIndex: 2,
         }}
       >
-        📌
-      </button>
+        {isToday && (
+          <button
+            onClick={onDelete}
+            title="Remove"
+            style={{
+              background: "var(--bg3)",
+              border: "none",
+              borderRadius: 99,
+              width: 18,
+              height: 18,
+              cursor: "pointer",
+              fontSize: 9,
+              color: "var(--text3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
+        )}
+        <button
+          onClick={onPromote}
+          title={
+            isPromoted ? "Automatically check / Already pinned" : "Pin and check custom food"
+          }
+          style={{
+            background: isPromoted ? "var(--greenBg)" : "var(--surface)",
+            border: `1px solid ${isPromoted ? "var(--green)" : "var(--border2)"}`,
+            borderRadius: 6,
+            width: 28,
+            height: 28,
+            cursor: "pointer",
+            fontSize: 14,
+            color: isPromoted ? "var(--green)" : "var(--text3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          📌
+        </button>
+      </div>
     </div>
   );
 }
