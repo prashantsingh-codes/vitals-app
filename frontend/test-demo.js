@@ -21,7 +21,7 @@ if (!executablePath) {
   process.exit(1);
 }
 
-const artifactDir = 'C:\\Users\\acer\\.gemini\\antigravity-ide\\brain\\809c49c6-3bbb-4615-a80d-a930d80c503f';
+const artifactDir = 'C:\\Users\\acer\\.gemini\\antigravity-ide\\brain\\21a01e22-6639-451c-b062-cce5940142af';
 if (!fs.existsSync(artifactDir)) {
   fs.mkdirSync(artifactDir, { recursive: true });
 }

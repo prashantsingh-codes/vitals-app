@@ -3099,6 +3099,16 @@ function MainApp({
   const suppressPresetSave = useRef(false);
   const midnightResetInProgress = useRef(false);
   const pendingSavePromise = useRef(null);
+  const pendingPatch = useRef({});
+  const saveInFlightCount = useRef(0);
+  const saveResolvers = useRef([]);
+  const resolveAllPendingSaves = () => {
+    const resolvers = saveResolvers.current;
+    saveResolvers.current = [];
+    resolvers.forEach((r) => r());
+    pendingSavePromise.current = null;
+    pendingPatch.current = {};
+  };
   const modalOpenRef = useRef(false);
   const isToday = selectedDate === todayStr();
 
@@ -3211,6 +3221,7 @@ function MainApp({
           clearTimeout(syncTimer.current);
           syncTimer.current = null;
           setSyncing(false);
+          resolveAllPendingSaves();
           try {
             await api.saveLog({
               date: lastDate,
@@ -3268,6 +3279,7 @@ function MainApp({
         clearTimeout(syncTimer.current);
         syncTimer.current = null;
         setSyncing(false);
+        resolveAllPendingSaves();
         const prevDate = selectedDateRef.current;
         try {
           await api.saveLog({
@@ -3362,8 +3374,7 @@ function MainApp({
 
   async function syncNow(isManual = false) {
     if (modalOpenRef.current || midnightResetInProgress.current) return;
-    // Skip background polling if there is a pending or in-flight save to avoid race conditions and stale overwrites
-    if (!isManual && (syncTimer.current || pendingSavePromise.current || presetSyncTimer.current)) {
+    if (!isManual && (syncTimer.current || pendingSavePromise.current || presetSyncTimer.current || saveInFlightCount.current > 0)) {
       return;
     }
     if (isManual && pendingSavePromise.current) {
@@ -3375,7 +3386,7 @@ function MainApp({
         api.getProfile(),
       ]);
 
-      if (isTodayRef.current && !syncTimer.current && !pendingSavePromise.current) {
+      if (isTodayRef.current && !syncTimer.current && !pendingSavePromise.current && saveInFlightCount.current === 0) {
         const log = await api.getLog(selectedDateRef2.current);
         
         const nextItems = log.items || {};
@@ -3498,22 +3509,35 @@ function MainApp({
   }, []);
 
   function scheduleSave(patch) {
+    pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncing(true);
     const saveDate = selectedDateRef.current;
-    pendingSavePromise.current = new Promise((resolve) => {
+
+    const currentPromise = new Promise((resolve) => {
       syncTimer.current = setTimeout(async () => {
         syncTimer.current = null;
+        const patchToSend = { ...pendingPatch.current };
+        pendingPatch.current = {};
+
+        saveInFlightCount.current++;
         try {
-          await api.saveLog({ ...patch, date: saveDate });
+          await api.saveLog({ ...patchToSend, date: saveDate });
         } catch (e) {
           console.error("Save error:", e);
+        } finally {
+          saveInFlightCount.current--;
+          if (saveInFlightCount.current === 0 && !syncTimer.current) {
+            resolveAllPendingSaves();
+            setSyncing(false);
+          }
+          resolve();
         }
-        setSyncing(false);
-        pendingSavePromise.current = null;
-        resolve();
       }, 800);
     });
+
+    saveResolvers.current.push(currentPromise);
+    pendingSavePromise.current = currentPromise;
   }
 
   function setItemCount(id, count) {
