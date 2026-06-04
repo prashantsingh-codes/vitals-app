@@ -229,12 +229,51 @@ export default function App() {
   }, [user]);
 
   function handleAuth(u) {
+    // Clear user-specific localStorage keys before setting the new user
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("vt_") && key !== "vt_dark" && key !== "vt_token") {
+        localStorage.removeItem(key);
+      }
+    }
+    // Reset state variables to defaults
+    setOnboardingDone(false);
+    setUserTargets(DEFAULT_TARGETS);
+    setUserGoal("lose");
+    setUserProfile(null);
+    setIsEditingGoals(false);
+    setServerPresetFoods(null);
+    setServerPermDeletedPromoted([]);
+    setServerEverPromoted([]);
+    setServerPermDeletedPresets([]);
+    setServerWaterGoal(null);
+    setServerStepsGoal(null);
+
     setUser(u);
   }
   function handleLogout() {
     setUser(null);
-    localStorage.removeItem("vt_token");
+    // Clear user-specific localStorage keys
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("vt_") && key !== "vt_dark") {
+        localStorage.removeItem(key);
+      }
+    }
+    // Reset state variables to defaults
+    setOnboardingDone(false);
+    setUserTargets(DEFAULT_TARGETS);
+    setUserGoal("lose");
+    setUserProfile(null);
+    setIsEditingGoals(false);
+    setServerPresetFoods(null);
+    setServerPermDeletedPromoted([]);
+    setServerEverPromoted([]);
+    setServerPermDeletedPresets([]);
+    setServerWaterGoal(null);
+    setServerStepsGoal(null);
   }
+
 
   function handleOnboardingComplete({ goal, profile, targets }) {
     setUserGoal(goal);
@@ -3179,6 +3218,14 @@ function MainApp({
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+      if (presetSyncTimer.current) clearTimeout(presetSyncTimer.current);
+    };
+  }, []);
+
 
   useEffect(() => {
     if (!presetInitialized.current) {
