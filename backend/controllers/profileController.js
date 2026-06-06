@@ -45,9 +45,9 @@ export async function saveProfile(req, res) {
       {
         $set: {
           userId: req.userId,
-          goal,
-          profile,
-          targets,
+          ...(goal !== undefined && { goal }),
+          ...(profile !== undefined && { profile }),
+          ...(targets !== undefined && { targets }),
           ...(presetFoods         !== undefined && { presetFoods }),
           ...(permDeletedPromoted !== undefined && { permDeletedPromoted }),
           ...(everPromoted        !== undefined && { everPromoted }),

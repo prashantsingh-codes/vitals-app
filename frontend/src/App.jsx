@@ -81,6 +81,7 @@ export default function App() {
     }
   });
   const [authChecking, setAuthChecking] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(
     () => !!localStorage.getItem("vt_targets"),
   );
@@ -193,6 +194,7 @@ export default function App() {
   // Load profile from server after login
   useEffect(() => {
     if (!user) return;
+    setProfileLoading(true);
     api
       .getProfile()
       .then((data) => {
@@ -204,6 +206,8 @@ export default function App() {
           store.set("vt_profile", data.profile);
           store.set("vt_targets", data.targets);
           setOnboardingDone(true);
+        } else {
+          setOnboardingDone(false);
         }
         if (data.presetFoods) {
           setServerPresetFoods(data.presetFoods);
@@ -225,17 +229,23 @@ export default function App() {
           setServerStepsGoal(data.stepsGoal);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => {
+        setProfileLoading(false);
+      });
   }, [user]);
 
   function handleAuth(u) {
     // Clear user-specific localStorage keys before setting the new user
-    for (let i = localStorage.length - 1; i >= 0; i--) {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith("vt_") && key !== "vt_dark" && key !== "vt_token") {
-        localStorage.removeItem(key);
+        keysToRemove.push(key);
       }
     }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     // Reset state variables to defaults
     setOnboardingDone(false);
     setUserTargets(DEFAULT_TARGETS);
@@ -254,12 +264,15 @@ export default function App() {
   function handleLogout() {
     setUser(null);
     // Clear user-specific localStorage keys
-    for (let i = localStorage.length - 1; i >= 0; i--) {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith("vt_") && key !== "vt_dark") {
-        localStorage.removeItem(key);
+        keysToRemove.push(key);
       }
     }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     // Reset state variables to defaults
     setOnboardingDone(false);
     setUserTargets(DEFAULT_TARGETS);
@@ -296,7 +309,7 @@ export default function App() {
     setOnboardingDone(true);
   }
 
-  if (authChecking) {
+  if (authChecking || (user && profileLoading)) {
     return (
       <div
         style={{
@@ -4769,8 +4782,11 @@ chat: (
                 <button
                   onClick={async () => {
                     setSyncing2(true);
-                    await syncNow(true);
-                    setSyncing2(false);
+                    try {
+                      await syncNow(true);
+                    } finally {
+                      setSyncing2(false);
+                    }
                   }}
                   title="Sync now"
                   style={{
@@ -4897,8 +4913,11 @@ chat: (
               <button
                 onClick={async () => {
                   setSyncing2(true);
-                  await syncNow(true);
-                  setSyncing2(false);
+                  try {
+                    await syncNow(true);
+                  } finally {
+                    setSyncing2(false);
+                  }
                 }}
                 title="Sync now"
                 style={{

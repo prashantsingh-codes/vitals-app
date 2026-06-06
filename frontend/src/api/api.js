@@ -5,20 +5,29 @@ function getToken() { return localStorage.getItem("vt_token"); }
 
 async function request(method, path, body) {
   const token = getToken();
-  const res = await fetch(path, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      // Prevent Vercel's CDN from caching GET responses — stale cache breaks cross-device sync
-      "Cache-Control": "no-cache, no-store",
-      "Pragma": "no-cache",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-    ...(body !== undefined && { body: JSON.stringify(body) }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        // Prevent Vercel's CDN from caching GET responses — stale cache breaks cross-device sync
+        "Cache-Control": "no-cache, no-store",
+        "Pragma": "no-cache",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
 }
 
 export const api = {
