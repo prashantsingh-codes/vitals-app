@@ -3575,6 +3575,7 @@ function MainApp({
     const saveDate = selectedDateRef.current;
 
     const currentPromise = new Promise((resolve) => {
+      saveResolvers.current.push(resolve);
       syncTimer.current = setTimeout(async () => {
         syncTimer.current = null;
         const patchToSend = { ...pendingPatch.current };
@@ -3596,7 +3597,6 @@ function MainApp({
       }, 800);
     });
 
-    saveResolvers.current.push(currentPromise);
     pendingSavePromise.current = currentPromise;
   }
 
