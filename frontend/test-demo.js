@@ -21,7 +21,7 @@ if (!executablePath) {
   process.exit(1);
 }
 
-const artifactDir = 'C:\\Users\\acer\\.gemini\\antigravity-ide\\brain\\21a01e22-6639-451c-b062-cce5940142af';
+const artifactDir = 'C:\\Users\\acer\\.gemini\\antigravity-ide\\brain\\c95d5a0f-fe91-468f-853d-07f676c2f878';
 if (!fs.existsSync(artifactDir)) {
   fs.mkdirSync(artifactDir, { recursive: true });
 }
@@ -222,7 +222,7 @@ async function run() {
         const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
-        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+        return divs.find(d => d.style.minHeight === '60px' && d.textContent.includes(foodName));
       };
     });
 
@@ -392,7 +392,7 @@ async function run() {
         const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
-        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+        return divs.find(d => d.style.minHeight === '60px' && d.textContent.includes(foodName));
       };
     });
 
@@ -418,14 +418,6 @@ async function run() {
         const deleteBtn = Array.from(shakePreset.querySelectorAll('button')).find(b => b.textContent.trim() === '✕');
         if (deleteBtn) deleteBtn.click();
       }
-    });
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Click "Delete permanently" inside the confirm delete dialog
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const permDeleteBtn = buttons.find(b => b.textContent.includes('Delete permanently'));
-      if (permDeleteBtn) permDeleteBtn.click();
     });
     await new Promise(r => setTimeout(r, 1500));
 
@@ -491,7 +483,7 @@ async function run() {
         const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
-        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+        return divs.find(d => d.style.minHeight === '60px' && d.textContent.includes(foodName));
       };
     });
 
@@ -555,7 +547,7 @@ async function run() {
         const card = window.findCard('My Custom Foods');
         if (!card) return null;
         const divs = Array.from(card.querySelectorAll('div'));
-        return divs.find(d => d.style.display === 'flex' && d.style.alignItems === 'center' && d.textContent.includes(foodName));
+        return divs.find(d => d.style.minHeight === '60px' && d.textContent.includes(foodName));
       };
     });
 

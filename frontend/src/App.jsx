@@ -742,7 +742,6 @@ function Card({ title, icon, children, defaultOpen = true }) {
 }
 
 function FoodChip({ food, count, onCountChange, onDelete, isToday }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const FOOD_LABEL_MAP = {
     milk1: "Milk 1",
     milk2: "Milk 2",
@@ -760,121 +759,6 @@ function FoodChip({ food, count, onCountChange, onDelete, isToday }) {
       : `${m.cal}kcal · ${m.pro}g P · ${m.fat}g F`;
   const checked = count > 0;
 
-  if (food._promoted && isToday && confirmDelete) {
-    return (
-      <div
-        style={{
-          background: "var(--amberBg)",
-          border: "1px solid var(--amber)",
-          borderRadius: 10,
-          padding: "10px 12px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: "var(--amber)",
-            marginBottom: 8,
-          }}
-        >
-          Remove "{label}" from presets?
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <button
-            onClick={() => {
-              onDelete("permanent");
-              setConfirmDelete(false);
-            }}
-            style={{
-              background: "var(--accent)",
-              border: "none",
-              borderRadius: 8,
-              padding: "7px 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#fff",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              textAlign: "left",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 14, lineHeight: 1.4, flexShrink: 0 }}>
-              ✕
-            </span>
-            <div>
-              Delete permanently
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 400,
-                  opacity: 0.85,
-                  marginTop: 1,
-                }}
-              >
-                Won't return on "Restore presets" · stays in Custom Foods
-              </div>
-            </div>
-          </button>
-          <button
-            onClick={() => {
-              onDelete("today");
-              setConfirmDelete(false);
-            }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border2)",
-              borderRadius: 8,
-              padding: "7px 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--text)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              textAlign: "left",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 14, lineHeight: 1.4, flexShrink: 0 }}>
-              ↩
-            </span>
-            <div>
-              Delete temporarily
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 400,
-                  color: "var(--text3)",
-                  marginTop: 1,
-                }}
-              >
-                Returns when you "Restore presets" · stays in Custom Foods
-              </div>
-            </div>
-          </button>
-          <button
-            onClick={() => setConfirmDelete(false)}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 11,
-              color: "var(--text3)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              padding: "4px 0",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
   return (
     <div
       style={{
@@ -956,11 +840,7 @@ function FoodChip({ food, count, onCountChange, onDelete, isToday }) {
       <MiniStepper val={count} onChange={onCountChange} />
       <button
         onClick={() => {
-          if (food._promoted && isToday) {
-            setConfirmDelete(true);
-          } else {
-            onDelete(food._promoted ? "unpin" : "today");
-          }
+          onDelete(food._promoted ? "unpin" : "today");
         }}
         style={{
           position: "absolute",
@@ -1279,19 +1159,21 @@ function CustomFoodChip({ food, onDelete, onPromote, isPromoted, isToday }) {
       )}
 
       {/* Name + macros — text from top, no checkbox */}
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--text)",
-          wordBreak: "break-word",
-          lineHeight: 1.3,
-        }}
-      >
-        {food.name}
-      </div>
-      <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
-        {food.cal}kcal · {food.pro}g P · {food.fat}g F
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 22 }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--text)",
+            wordBreak: "break-word",
+            lineHeight: 1.3,
+          }}
+        >
+          {food.name}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+          {food.cal}kcal · {food.pro}g P · {food.fat}g F
+        </div>
       </div>
 
       {/* 📌 — absolute bottom-right, never overlaps ✕ */}
