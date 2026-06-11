@@ -490,9 +490,9 @@ async function run() {
     const isActiveOnYesterday = await page.evaluate(() => {
       const shakePreset = window.findFoodChip('Automated Shake');
       const shakeChip = window.findCustomFoodChip('Automated Shake');
-      return !!shakePreset && !!shakeChip;
+      return !shakePreset && !!shakeChip;
     });
-    console.log(`🛡️ Is the preset and custom food still active on Yesterday? ${isActiveOnYesterday ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
+    console.log(`🛡️ Is the custom food active but preset unpinned on Yesterday? ${isActiveOnYesterday ? 'YES (Passed ✓)' : 'NO (Failed ✕)'}`);
     await page.screenshot({ path: path.join(artifactDir, 'step7_yesterday_active_retained.png') });
 
     // Switch to tomorrow and verify it is not present in presets and custom foods

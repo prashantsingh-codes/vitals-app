@@ -3669,26 +3669,6 @@ function MainApp({
 
   function resetPresetFoods() {
     setPermDeletedPresets([]);
-    if (selectedDate === todayStr()) {
-      setTempRemovedPinned([]);
-      setPinnedFoods((prev) =>
-        prev.map((p) =>
-          p.unpinnedAtDate === todayStr()
-            ? { ...p, unpinnedAtDate: undefined }
-            : p
-        )
-      );
-    } else {
-      const tomorrow = addDays(selectedDate, 1);
-      setPinnedFoods((prev) =>
-        prev.map((p) => {
-          if (p.unpinnedAtDate && p.unpinnedAtDate <= selectedDate) {
-            return { ...p, unpinnedAtDate: tomorrow };
-          }
-          return p;
-        })
-      );
-    }
   }
 
   async function logWeight() {
